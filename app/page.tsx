@@ -1,11 +1,11 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export default function Home() {
   const runs = useQuery(api.runs.list);
-  const generate = useMutation(api.generate.generate);
+  const generate = useAction(api.generate.generate);
 
   return (
     <main className="min-h-screen p-8 bg-gradient-to-br from-gray-50 to-gray-100">

@@ -1,11 +1,12 @@
-import { mutation } from "./_generated/server";
+import { action, mutation } from "./_generated/server";
+import { api } from "./_generated/api";
 import OpenAI from "openai";
 import { V2_NEUTRAL } from "./prompts";
 import { ARTISTS, BRUSH } from "./artists";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export const generate = mutation(async ({ db }) => {
+export const generate = action(async ({ runMutation }) => {
   const artist = ARTISTS[0]; // For now, use first Artist
   const runGroupId = crypto.randomUUID();
   const promptVersion = "v2-neutral";
@@ -19,8 +20,8 @@ export const generate = mutation(async ({ db }) => {
   // 2️⃣ Brush paints
   const { imageUrl } = await generateBrush(BRUSH.slug, imagePrompt);
 
-  // 3️⃣ Persist
-  await db.insert("runs", {
+  // 3️⃣ Persist (via mutation since actions can't write directly)
+  await runMutation(api.generate.saveRun, {
     runGroupId,
     artistSlug: artist.slug,
     brushSlug: BRUSH.slug,
@@ -29,7 +30,7 @@ export const generate = mutation(async ({ db }) => {
     imagePrompt,
     imageUrl,
     status: "done",
-    meta: { promptText: V2_NEUTRAL }, // Store prompt for reproducibility
+    meta: { promptText: V2_NEUTRAL },
     createdAt: Date.now(),
   });
 
@@ -70,3 +71,19 @@ async function generateBrush(modelSlug: string, imagePrompt: string) {
 
   return { imageUrl: img.data[0].url };
 }
+
+// Mutation to save the run (called from the action)
+export const saveRun = mutation(async ({ db }, args: {
+  runGroupId: string;
+  artistSlug: string;
+  brushSlug: string;
+  promptVersion: string;
+  artistStmt: string;
+  imagePrompt: string;
+  imageUrl: string;
+  status: string;
+  meta: any;
+  createdAt: number;
+}) => {
+  await db.insert("runs", args);
+});
