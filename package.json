@@ -2,16 +2,22 @@
   "name": "feeling-machines",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,yml,yaml,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yml,yaml,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yml,yaml,css}\"",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "@vitest/ui": "^3.2.4",
+    "prettier": "^3.3.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",

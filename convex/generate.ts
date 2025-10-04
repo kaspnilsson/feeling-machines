@@ -1,11 +1,9 @@
 import { action, mutation } from "./_generated/server";
 import { api } from "./_generated/api";
-import OpenAI from "openai";
-import { V2_NEUTRAL } from "./prompts";
+import { V2_NEUTRAL, SYSTEM_PROMPT } from "./prompts";
 import { DEFAULT_ARTIST, DEFAULT_BRUSH } from "./artists";
 import { getBrush } from "./brushes";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+import { getArtist } from "./artistAdapters";
 
 export const generate = action(
   async ({
@@ -24,22 +22,30 @@ export const generate = action(
     try {
       // 1️⃣ Artist imagines
       console.log(`[Artist Step] Calling ${artist.slug}...`);
-      const startArtist = Date.now();
-      const { statement, imagePrompt } = await generateArtist(
-        artist.slug,
+      const artistAdapter = getArtist(artist.slug);
+      const artistResponse = await artistAdapter.generateArtistResponse(
+        SYSTEM_PROMPT,
         V2_NEUTRAL
       );
-      const artistDuration = Date.now() - startArtist;
-      console.log(`[Artist Step] ✓ Complete in ${artistDuration}ms`);
-      console.log(`[Artist Step] Statement length: ${statement.length} chars`);
       console.log(
-        `[Artist Step] Image prompt: "${imagePrompt.substring(0, 100)}..."`
+        `[Artist Step] ✓ Complete in ${artistResponse.metadata.latencyMs}ms`
+      );
+      console.log(
+        `[Artist Step] Statement length: ${artistResponse.statement.length} chars`
+      );
+      console.log(
+        `[Artist Step] Image prompt: "${artistResponse.imagePrompt.substring(0, 100)}..."`
+      );
+      console.log(
+        `[Artist Step] Cost estimate: $${artistResponse.metadata.costEstimate.toFixed(6)}`
       );
 
       // 2️⃣ Brush paints
       console.log(`[Brush Step] Calling ${brush.slug}...`);
       const startBrush = Date.now();
-      const { imageB64, metadata } = await brush.generate(imagePrompt);
+      const { imageB64, metadata } = await brush.generate(
+        artistResponse.imagePrompt
+      );
       const brushDuration = Date.now() - startBrush;
       console.log(`[Brush Step] ✓ Complete in ${brushDuration}ms`);
       console.log(`[Brush Step] Image size: ${imageB64.length} bytes`);
@@ -74,25 +80,31 @@ export const generate = action(
         artistSlug: artist.slug,
         brushSlug: brush.slug,
         promptVersion,
-        artistStmt: statement,
-        imagePrompt,
+        artistStmt: artistResponse.statement,
+        imagePrompt: artistResponse.imagePrompt,
         imageStorageId: storageId as any,
         status: "done",
         meta: {
           promptText: V2_NEUTRAL,
-          artistDuration,
-          brushDuration,
-          totalDuration: artistDuration + brushDuration,
-          brushMetadata: metadata,
+          artist: artistResponse.metadata,
+          brush: {
+            latencyMs: brushDuration,
+            metadata,
+          },
+          totalDuration: artistResponse.metadata.latencyMs + brushDuration,
         },
         createdAt: Date.now(),
       });
       console.log(`[Save Step] ✓ Saved to database`);
       console.log(
-        `[Generate] ✓ Complete! Total time: ${artistDuration + brushDuration}ms`
+        `[Generate] ✓ Complete! Total time: ${artistResponse.metadata.latencyMs + brushDuration}ms`
       );
 
-      return { runGroupId, statement, storageId };
+      return {
+        runGroupId,
+        statement: artistResponse.statement,
+        storageId,
+      };
     } catch (error: any) {
       console.error(`[Generate] ✗ Error during generation:`, error);
       console.error(`[Generate] Error name: ${error.name}`);
@@ -102,38 +114,6 @@ export const generate = action(
     }
   }
 );
-
-// Helper functions (abstracted for Phase 2 reuse)
-async function generateArtist(modelSlug: string, prompt: string) {
-  console.log(`  → Calling Artist model: ${modelSlug}`);
-  console.log(`  → Prompt length: ${prompt.length} chars`);
-
-  const chat = await openai.chat.completions.create({
-    model: modelSlug,
-    messages: [
-      { role: "system", content: "You are an imaginative visual artist." },
-      { role: "user", content: prompt },
-    ],
-  });
-
-  console.log(`  → Received Artist response, parsing...`);
-  const text = chat.choices[0].message?.content ?? "";
-  const statement =
-    /===ARTIST STATEMENT===([\s\S]*?)===FINAL IMAGE PROMPT===/i
-      .exec(text)?.[1]
-      ?.trim() ?? "";
-  const imagePrompt =
-    /===FINAL IMAGE PROMPT===([\s\S]*)$/i.exec(text)?.[1]?.trim() ?? "";
-
-  if (!statement || !imagePrompt) {
-    console.warn(
-      `  ⚠ Parsing warning: statement=${!!statement}, imagePrompt=${!!imagePrompt}`
-    );
-    console.log(`  Raw response: ${text.substring(0, 200)}...`);
-  }
-
-  return { statement, imagePrompt };
-}
 
 // Mutation to generate upload URL for storage
 export const generateUploadUrl = mutation(async ({ storage }, args: {}) => {

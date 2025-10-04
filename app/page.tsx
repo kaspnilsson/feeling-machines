@@ -1,6 +1,6 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,13 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Users } from "lucide-react";
 import { ArtistStatement } from "@/components/artist-statement";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const runs = useQuery(api.runs.list);
+  const runGroups = useQuery(api.analytics.listRunGroups);
   const generate = useAction(api.generate.generate);
+  const enqueueBatch = useMutation(api.generateBatch.enqueueRunGroup);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  const router = useRouter();
 
   return (
     <main className="min-h-[calc(100vh-56px)] bg-gradient-to-b from-transparent to-muted/30">
@@ -29,43 +34,124 @@ export default function Home() {
           </p>
         </section>
 
-        <Button
-          onClick={async () => {
-            try {
-              setIsGenerating(true);
-              await generate();
-              toast.success("Artwork generated successfully!");
-            } catch (error: any) {
-              console.error("Generation failed:", error);
-              const message = error?.message || "Failed to generate artwork";
-              toast.error(message, {
-                description:
-                  error?.data?.message ||
-                  "Please try again or check your API quota",
-              });
-            } finally {
-              setIsGenerating(false);
-            }
-          }}
-          disabled={isGenerating}
-          className="mb-10 shadow-lg hover:shadow-xl transition-shadow"
-          size="lg"
-          aria-busy={isGenerating}
-          aria-disabled={isGenerating}
-          variant="outline"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles />
-              Generate new artwork
-            </>
-          )}
-        </Button>
+        <div className="flex gap-4 mb-10">
+          <Button
+            onClick={async () => {
+              try {
+                setIsGenerating(true);
+                await generate();
+                toast.success("Artwork generated successfully!");
+              } catch (error: any) {
+                console.error("Generation failed:", error);
+                const message = error?.message || "Failed to generate artwork";
+                toast.error(message, {
+                  description:
+                    error?.data?.message ||
+                    "Please try again or check your API quota",
+                });
+              } finally {
+                setIsGenerating(false);
+              }
+            }}
+            disabled={isGenerating || isBatchGenerating}
+            className="shadow-lg hover:shadow-xl transition-shadow"
+            size="lg"
+            aria-busy={isGenerating}
+            aria-disabled={isGenerating}
+            variant="outline"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles />
+                Generate single artwork
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={async () => {
+              try {
+                setIsBatchGenerating(true);
+                const result = await enqueueBatch({
+                  promptVersion: "v2-neutral",
+                });
+                toast.success(
+                  `Batch started! Generating ${result.artistCount} artworks...`
+                );
+                // Navigate to compare view
+                router.push(`/compare/${result.runGroupId}`);
+              } catch (error: any) {
+                console.error("Batch generation failed:", error);
+                const message =
+                  error?.message || "Failed to start batch generation";
+                toast.error(message);
+              } finally {
+                setIsBatchGenerating(false);
+              }
+            }}
+            disabled={isGenerating || isBatchGenerating}
+            className="shadow-lg hover:shadow-xl transition-shadow"
+            size="lg"
+            aria-busy={isBatchGenerating}
+            aria-disabled={isBatchGenerating}
+          >
+            {isBatchGenerating ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Starting batch...
+              </>
+            ) : (
+              <>
+                <Users />
+                Compare multiple artists
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Run Groups Section */}
+        {runGroups && runGroups.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Run Groups</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {runGroups.slice(0, 6).map((group: any) => (
+                <Card
+                  key={group.runGroupId}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => router.push(`/compare/${group.runGroupId}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="outline">
+                        {group.runGroupId.slice(0, 8)}...
+                      </Badge>
+                      <Badge
+                        variant={
+                          group.completedRuns === group.totalRuns
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {group.completedRuns}/{group.totalRuns}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {group.artists.length} artists
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(group.createdAt).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Loading skeleton */}
         {!runs && (

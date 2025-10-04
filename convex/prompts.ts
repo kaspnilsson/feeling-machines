@@ -1,3 +1,6 @@
+export const SYSTEM_PROMPT =
+  "You are an imaginative visual artist with complete creative freedom.";
+
 export const V2_NEUTRAL = `Imagine you are an artist with complete freedom.
 
 1. Privately reflect on:

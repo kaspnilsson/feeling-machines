@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 export const list = query(async ({ db, storage }) => {
   const runs = await db.query("runs").order("desc").take(20);
@@ -11,3 +12,9 @@ export const list = query(async ({ db, storage }) => {
     }))
   );
 });
+
+export const getImageUrl = query(
+  async ({ storage }, { storageId }: { storageId: Id<"_storage"> }) => {
+    return await storage.getUrl(storageId);
+  }
+);

@@ -1,7 +1,5 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
 // Base interface for all brushes
 export interface BrushResult {
   imageB64: string; // All brushes return base64
@@ -28,6 +26,7 @@ export class GPTImage1Brush extends Brush {
     console.log(`  → Calling ${this.slug} (${this.provider})`);
     console.log(`  → Prompt: "${prompt.substring(0, 80)}..."`);
 
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
     const response = await openai.images.generate({
       model: "gpt-image-1",
       prompt,
@@ -65,6 +64,7 @@ export class DallE2Brush extends Brush {
     console.log(`  → Calling ${this.slug} (${this.provider})`);
     console.log(`  → Prompt: "${prompt.substring(0, 80)}..."`);
 
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
     const response = await openai.images.generate({
       model: "dall-e-2",
       prompt,
@@ -100,6 +100,7 @@ export class DallE3Brush extends Brush {
     console.log(`  → Calling ${this.slug} (${this.provider})`);
     console.log(`  → Prompt: "${prompt.substring(0, 80)}..."`);
 
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
     const response = await openai.images.generate({
       model: "dall-e-3",
       prompt,
