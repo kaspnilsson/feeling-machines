@@ -5,3 +5,14 @@ node_modules/
 dist/
 build/
 *.log
+
+# Next.js
+.next/
+out/
+
+# Convex
+convex/_generated/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
