@@ -36,6 +36,7 @@ feeling-machines/
     generate.ts
     runs.ts
     prompts.ts             # prompt constants
+    artists.ts             # artist registry (Phase 2 ready)
   .env.local
 ```
 
@@ -67,6 +68,31 @@ export const V2_NEUTRAL = `Imagine you are an artist with complete freedom.
 
 ---
 
+## 3b · Artist Registry (convex/artists.ts)
+
+Create a centralized registry for Artist configurations:
+
+```ts
+export const ARTISTS = [
+  {
+    slug: "gpt-4o-mini",
+    provider: "openai",
+    displayName: "GPT-4o Mini",
+  },
+  // Phase 2 will add: claude-3-opus, gemini-1.5-pro, etc.
+];
+
+export const BRUSH = {
+  slug: "dall-e-3", // TODO: verify actual model name
+  displayName: "DALL-E 3",
+};
+```
+
+> **Why now?** Even with one Artist, using a registry means Phase 2 just adds
+> more entries instead of refactoring the mutation logic.
+
+---
+
 ## 4 · Convex Schema (convex/schema.ts)
 
 ```ts
@@ -75,17 +101,23 @@ import { v } from "convex/values";
 
 export default defineSchema({
   runs: defineTable({
+    runGroupId: v.string(), // UUID linking runs from same experiment
     artistSlug: v.string(), // e.g. "gpt-4o-mini"
-    brushSlug: v.string(), // e.g. "gpt-image-3"
+    brushSlug: v.string(), // e.g. "dall-e-3"
     promptVersion: v.string(), // "v2-neutral"
     artistStmt: v.string(),
     imagePrompt: v.string(),
     imageUrl: v.string(),
-    seed: v.optional(v.number()),
+    status: v.string(), // "queued" | "generating" | "done" | "failed"
+    meta: v.optional(v.any()), // JSON for model params, cost, latency
     createdAt: v.number(),
   }),
 });
 ```
+
+> **Phase 2 ready:** The `runGroupId` field allows grouping multiple Artists'
+> responses to the same prompt. The `status` and `meta` fields support async
+> generation and cost tracking.
 
 Run `npx convex dev` once to push schema.
 
@@ -97,22 +129,51 @@ Run `npx convex dev` once to push schema.
 import { mutation } from "./_generated/server";
 import OpenAI from "openai";
 import { V2_NEUTRAL } from "./prompts";
+import { ARTISTS, BRUSH } from "./artists";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 export const generate = mutation(async ({ db }) => {
-  const artistSlug = "gpt-4o-mini";
-  const brushSlug = "dall-e-3"; // TODO: verify actual OpenAI image model name
+  const artist = ARTISTS[0]; // For now, use first Artist
+  const runGroupId = crypto.randomUUID();
   const promptVersion = "v2-neutral";
 
   // 1️⃣ Artist imagines
+  const { statement, imagePrompt } = await generateArtist(
+    artist.slug,
+    V2_NEUTRAL
+  );
+
+  // 2️⃣ Brush paints
+  const { imageUrl } = await generateBrush(BRUSH.slug, imagePrompt);
+
+  // 3️⃣ Persist
+  await db.insert("runs", {
+    runGroupId,
+    artistSlug: artist.slug,
+    brushSlug: BRUSH.slug,
+    promptVersion,
+    artistStmt: statement,
+    imagePrompt,
+    imageUrl,
+    status: "done",
+    meta: { promptText: V2_NEUTRAL }, // Store prompt for reproducibility
+    createdAt: Date.now(),
+  });
+
+  return { runGroupId, statement, imageUrl };
+});
+
+// Helper functions (abstracted for Phase 2 reuse)
+async function generateArtist(modelSlug: string, prompt: string) {
   const chat = await openai.chat.completions.create({
-    model: artistSlug,
+    model: modelSlug,
     messages: [
       { role: "system", content: "You are an imaginative visual artist." },
-      { role: "user", content: V2_NEUTRAL },
+      { role: "user", content: prompt },
     ],
   });
+
   const text = chat.choices[0].message?.content ?? "";
   const statement =
     /===ARTIST STATEMENT===([\s\S]*?)===FINAL IMAGE PROMPT===/i
@@ -121,28 +182,23 @@ export const generate = mutation(async ({ db }) => {
   const imagePrompt =
     /===FINAL IMAGE PROMPT===([\s\S]*)$/i.exec(text)?.[1]?.trim() ?? "";
 
-  // 2️⃣ Brush paints
+  return { statement, imagePrompt };
+}
+
+async function generateBrush(modelSlug: string, imagePrompt: string) {
   const img = await openai.images.generate({
-    model: brushSlug,
+    model: modelSlug,
     prompt: imagePrompt,
     size: "1024x1024",
   });
-  const imageUrl = img.data[0].url!;
 
-  // 3️⃣ Persist
-  await db.insert("runs", {
-    artistSlug,
-    brushSlug,
-    promptVersion,
-    artistStmt: statement,
-    imagePrompt,
-    imageUrl,
-    createdAt: Date.now(),
-  });
-
-  return { statement, imageUrl };
-});
+  return { imageUrl: img.data[0].url! };
+}
 ```
+
+> **Phase 2 ready:** The `generateArtist()` and `generateBrush()` helpers are
+> extracted so Phase 2 can loop over multiple Artists without duplicating logic.
+> The `runGroupId` allows grouping runs from the same experiment batch.
 
 ---
 
@@ -216,8 +272,9 @@ OPENAI_API_KEY=sk-...
 - [ ] `npx convex dev` (creates `convex/` folder, sets up `.env.local`)
 - [ ] Add `OPENAI_API_KEY=sk-...` to `.env.local`
 - [ ] Create `convex/prompts.ts` with the V2_NEUTRAL constant
-- [ ] Copy schema to `convex/schema.ts`
-- [ ] Copy mutation to `convex/generate.ts`
+- [ ] Create `convex/artists.ts` with ARTISTS and BRUSH registries
+- [ ] Copy schema to `convex/schema.ts` (with runGroupId, status, meta fields)
+- [ ] Copy mutation to `convex/generate.ts` (with helper functions)
 - [ ] Copy query to `convex/runs.ts`
 - [ ] Test generation in Convex dashboard (run `api.generate()`)
 
@@ -555,6 +612,34 @@ deserve attention early:**
 
 If you keep those in mind, the Phase 1 code remains a clean foundation for every
 future phase.
+
+---
+
+## 🎯 Phase 2 Readiness Summary
+
+This Phase 1 implementation is structured for Phase 2 from day one:
+
+✅ **Schema includes:**
+
+- `runGroupId` for grouping multi-Artist experiments
+- `status` for async/queued generation tracking
+- `meta` for cost, latency, and prompt text storage
+
+✅ **Architecture patterns:**
+
+- Artist registry (`convex/artists.ts`) makes adding models trivial
+- Extracted `generateArtist()` and `generateBrush()` helpers for reuse
+- Prompt text stored in `meta` for reproducibility
+
+✅ **What Phase 2 adds:**
+
+- Loop over `ARTISTS` array instead of using `ARTISTS[0]`
+- Build `enqueueRunGroup()` mutation for batch generation
+- Add compare view UI grouped by `runGroupId`
+- Implement throttling/queuing if needed
+
+**No refactoring needed** — Phase 2 is just filling in the loops and UI the
+schema already supports.
 
 ---
 
