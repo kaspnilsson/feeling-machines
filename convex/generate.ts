@@ -2,43 +2,112 @@ import { action, mutation } from "./_generated/server";
 import { api } from "./_generated/api";
 import OpenAI from "openai";
 import { V2_NEUTRAL } from "./prompts";
-import { ARTISTS, BRUSH } from "./artists";
+import { DEFAULT_ARTIST, DEFAULT_BRUSH } from "./artists";
+import { getBrush } from "./brushes";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export const generate = action(async ({ runMutation }) => {
-  const artist = ARTISTS[0]; // For now, use first Artist
-  const runGroupId = crypto.randomUUID();
-  const promptVersion = "v2-neutral";
+export const generate = action(
+  async ({
+    runMutation,
+  }): Promise<{ runGroupId: string; statement: string; storageId: string }> => {
+    const artist = DEFAULT_ARTIST;
+    const brushConfig = DEFAULT_BRUSH;
+    const brush = getBrush(brushConfig.slug);
+    const runGroupId = crypto.randomUUID();
+    const promptVersion = "v2-neutral";
 
-  // 1️⃣ Artist imagines
-  const { statement, imagePrompt } = await generateArtist(
-    artist.slug,
-    V2_NEUTRAL
-  );
+    console.log(`[Generate] Starting new run ${runGroupId}`);
+    console.log(`[Generate] Artist: ${artist.slug} (${artist.displayName})`);
+    console.log(`[Generate] Brush: ${brush.slug} (${brush.displayName})`);
 
-  // 2️⃣ Brush paints
-  const { imageUrl } = await generateBrush(BRUSH.slug, imagePrompt);
+    try {
+      // 1️⃣ Artist imagines
+      console.log(`[Artist Step] Calling ${artist.slug}...`);
+      const startArtist = Date.now();
+      const { statement, imagePrompt } = await generateArtist(
+        artist.slug,
+        V2_NEUTRAL
+      );
+      const artistDuration = Date.now() - startArtist;
+      console.log(`[Artist Step] ✓ Complete in ${artistDuration}ms`);
+      console.log(`[Artist Step] Statement length: ${statement.length} chars`);
+      console.log(
+        `[Artist Step] Image prompt: "${imagePrompt.substring(0, 100)}..."`
+      );
 
-  // 3️⃣ Persist (via mutation since actions can't write directly)
-  await runMutation(api.generate.saveRun, {
-    runGroupId,
-    artistSlug: artist.slug,
-    brushSlug: BRUSH.slug,
-    promptVersion,
-    artistStmt: statement,
-    imagePrompt,
-    imageUrl,
-    status: "done",
-    meta: { promptText: V2_NEUTRAL },
-    createdAt: Date.now(),
-  });
+      // 2️⃣ Brush paints
+      console.log(`[Brush Step] Calling ${brush.slug}...`);
+      const startBrush = Date.now();
+      const { imageB64, metadata } = await brush.generate(imagePrompt);
+      const brushDuration = Date.now() - startBrush;
+      console.log(`[Brush Step] ✓ Complete in ${brushDuration}ms`);
+      console.log(`[Brush Step] Image size: ${imageB64.length} bytes`);
 
-  return { runGroupId, statement, imageUrl };
-});
+      // 3️⃣ Upload image to storage
+      console.log(`[Storage Step] Uploading image to Convex storage...`);
+      const uploadUrl = await runMutation(api.generate.generateUploadUrl, {});
+
+      // Convert base64 to Uint8Array (Buffer not available in Convex)
+      const binaryString = atob(imageB64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Upload the image
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: bytes,
+      });
+
+      const { storageId } = (await uploadResponse.json()) as {
+        storageId: string;
+      };
+      console.log(`[Storage Step] ✓ Uploaded to storage: ${storageId}`);
+
+      // 4️⃣ Persist metadata (via mutation since actions can't write directly)
+      console.log(`[Save Step] Persisting to database...`);
+      await runMutation(api.generate.saveRun, {
+        runGroupId,
+        artistSlug: artist.slug,
+        brushSlug: brush.slug,
+        promptVersion,
+        artistStmt: statement,
+        imagePrompt,
+        imageStorageId: storageId as any,
+        status: "done",
+        meta: {
+          promptText: V2_NEUTRAL,
+          artistDuration,
+          brushDuration,
+          totalDuration: artistDuration + brushDuration,
+          brushMetadata: metadata,
+        },
+        createdAt: Date.now(),
+      });
+      console.log(`[Save Step] ✓ Saved to database`);
+      console.log(
+        `[Generate] ✓ Complete! Total time: ${artistDuration + brushDuration}ms`
+      );
+
+      return { runGroupId, statement, storageId };
+    } catch (error: any) {
+      console.error(`[Generate] ✗ Error during generation:`, error);
+      console.error(`[Generate] Error name: ${error.name}`);
+      console.error(`[Generate] Error message: ${error.message}`);
+      console.error(`[Generate] Error status: ${error.status}`);
+      throw error;
+    }
+  }
+);
 
 // Helper functions (abstracted for Phase 2 reuse)
 async function generateArtist(modelSlug: string, prompt: string) {
+  console.log(`  → Calling Artist model: ${modelSlug}`);
+  console.log(`  → Prompt length: ${prompt.length} chars`);
+
   const chat = await openai.chat.completions.create({
     model: modelSlug,
     messages: [
@@ -47,6 +116,7 @@ async function generateArtist(modelSlug: string, prompt: string) {
     ],
   });
 
+  console.log(`  → Received Artist response, parsing...`);
   const text = chat.choices[0].message?.content ?? "";
   const statement =
     /===ARTIST STATEMENT===([\s\S]*?)===FINAL IMAGE PROMPT===/i
@@ -55,35 +125,22 @@ async function generateArtist(modelSlug: string, prompt: string) {
   const imagePrompt =
     /===FINAL IMAGE PROMPT===([\s\S]*)$/i.exec(text)?.[1]?.trim() ?? "";
 
+  if (!statement || !imagePrompt) {
+    console.warn(
+      `  ⚠ Parsing warning: statement=${!!statement}, imagePrompt=${!!imagePrompt}`
+    );
+    console.log(`  Raw response: ${text.substring(0, 200)}...`);
+  }
+
   return { statement, imagePrompt };
 }
 
-async function generateBrush(modelSlug: string, imagePrompt: string) {
-  const img = await openai.images.generate({
-    model: modelSlug,
-    prompt: imagePrompt,
-    size: "1024x1024",
-  });
-
-  if (!img.data || !img.data[0]?.url) {
-    throw new Error("No image URL returned from DALL-E");
-  }
-
-  return { imageUrl: img.data[0].url };
-}
+// Mutation to generate upload URL for storage
+export const generateUploadUrl = mutation(async ({ storage }, args: {}) => {
+  return await storage.generateUploadUrl();
+});
 
 // Mutation to save the run (called from the action)
-export const saveRun = mutation(async ({ db }, args: {
-  runGroupId: string;
-  artistSlug: string;
-  brushSlug: string;
-  promptVersion: string;
-  artistStmt: string;
-  imagePrompt: string;
-  imageUrl: string;
-  status: string;
-  meta: any;
-  createdAt: number;
-}) => {
+export const saveRun = mutation(async ({ db }, args: any) => {
   await db.insert("runs", args);
 });

@@ -36,7 +36,8 @@ feeling-machines/
     generate.ts
     runs.ts
     prompts.ts             # prompt constants
-    artists.ts             # artist registry (Phase 2 ready)
+    artists.ts             # artist & brush registries (Phase 2 ready)
+    brushes.ts             # brush adapter classes (OOP pattern)
   .env.local
 ```
 
@@ -68,9 +69,9 @@ export const V2_NEUTRAL = `Imagine you are an artist with complete freedom.
 
 ---
 
-## 3b · Artist Registry (convex/artists.ts)
+## 3b · Artist & Brush Registries (convex/artists.ts)
 
-Create a centralized registry for Artist configurations:
+Create centralized registries for Artist and Brush configurations:
 
 ```ts
 export const ARTISTS = [
@@ -82,14 +83,89 @@ export const ARTISTS = [
   // Phase 2 will add: claude-3-opus, gemini-1.5-pro, etc.
 ];
 
-export const BRUSH = {
-  slug: "dall-e-3", // TODO: verify actual model name
-  displayName: "DALL-E 3",
-};
+export const BRUSHES = [
+  {
+    slug: "gpt-image-1",
+    provider: "openai",
+    displayName: "GPT Image 1",
+  },
+  {
+    slug: "dall-e-2",
+    provider: "openai",
+    displayName: "DALL-E 2",
+  },
+  {
+    slug: "dall-e-3",
+    provider: "openai",
+    displayName: "DALL-E 3",
+  },
+];
+
+export const DEFAULT_ARTIST = ARTISTS[0];
+export const DEFAULT_BRUSH = BRUSHES[0];
 ```
 
 > **Why now?** Even with one Artist, using a registry means Phase 2 just adds
 > more entries instead of refactoring the mutation logic.
+
+## 3c · Brush Adapter Pattern (convex/brushes.ts)
+
+Use OOP to encapsulate brush-specific API logic:
+
+```ts
+import OpenAI from "openai";
+
+export interface BrushResult {
+  imageB64: string; // All brushes return base64
+  metadata?: any; // Brush-specific metadata
+}
+
+export abstract class Brush {
+  constructor(
+    public readonly slug: string,
+    public readonly displayName: string,
+    public readonly provider: string
+  ) {}
+
+  abstract generate(prompt: string): Promise<BrushResult>;
+}
+
+export class GPTImage1Brush extends Brush {
+  constructor() {
+    super("gpt-image-1", "GPT Image 1", "openai");
+  }
+
+  async generate(prompt: string): Promise<BrushResult> {
+    const response = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt,
+      size: "1024x1024",
+      // gpt-image-1 only returns b64_json
+    });
+
+    return {
+      imageB64: response.data[0].b64_json!,
+      metadata: { usage: response.usage },
+    };
+  }
+}
+
+export const BRUSH_REGISTRY: Record<string, Brush> = {
+  "gpt-image-1": new GPTImage1Brush(),
+  "dall-e-2": new DallE2Brush(),
+  "dall-e-3": new DallE3Brush(),
+};
+
+export function getBrush(slug: string): Brush {
+  const brush = BRUSH_REGISTRY[slug];
+  if (!brush) throw new Error(`Unknown brush: ${slug}`);
+  return brush;
+}
+```
+
+> **Why OOP?** Different brushes have different APIs (gpt-image-1 only returns
+> b64, dall-e needs response_format). The adapter pattern encapsulates these
+> differences while providing a uniform interface.
 
 ---
 
@@ -103,11 +179,11 @@ export default defineSchema({
   runs: defineTable({
     runGroupId: v.string(), // UUID linking runs from same experiment
     artistSlug: v.string(), // e.g. "gpt-4o-mini"
-    brushSlug: v.string(), // e.g. "dall-e-3"
+    brushSlug: v.string(), // e.g. "gpt-image-1"
     promptVersion: v.string(), // "v2-neutral"
     artistStmt: v.string(),
     imagePrompt: v.string(),
-    imageUrl: v.string(),
+    imageB64: v.string(), // Base64-encoded image data
     status: v.string(), // "queued" | "generating" | "done" | "failed"
     meta: v.optional(v.any()), // JSON for model params, cost, latency
     createdAt: v.number(),
@@ -123,18 +199,22 @@ Run `npx convex dev` once to push schema.
 
 ---
 
-## 5 · Backend Mutation (convex/generate.ts)
+## 5 · Backend Action (convex/generate.ts)
 
 ```ts
-import { mutation } from "./_generated/server";
+import { action, mutation } from "./_generated/server";
+import { api } from "./_generated/api";
 import OpenAI from "openai";
 import { V2_NEUTRAL } from "./prompts";
-import { ARTISTS, BRUSH } from "./artists";
+import { DEFAULT_ARTIST, DEFAULT_BRUSH } from "./artists";
+import { getBrush } from "./brushes";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export const generate = mutation(async ({ db }) => {
-  const artist = ARTISTS[0]; // For now, use first Artist
+export const generate = action(async ({ runMutation }) => {
+  const artist = DEFAULT_ARTIST;
+  const brushConfig = DEFAULT_BRUSH;
+  const brush = getBrush(brushConfig.slug);
   const runGroupId = crypto.randomUUID();
   const promptVersion = "v2-neutral";
 
@@ -144,27 +224,30 @@ export const generate = mutation(async ({ db }) => {
     V2_NEUTRAL
   );
 
-  // 2️⃣ Brush paints
-  const { imageUrl } = await generateBrush(BRUSH.slug, imagePrompt);
+  // 2️⃣ Brush paints (polymorphic call via OOP)
+  const { imageB64, metadata } = await brush.generate(imagePrompt);
 
-  // 3️⃣ Persist
-  await db.insert("runs", {
+  // 3️⃣ Persist (via mutation since actions can't write directly)
+  await runMutation(api.generate.saveRun, {
     runGroupId,
     artistSlug: artist.slug,
-    brushSlug: BRUSH.slug,
+    brushSlug: brush.slug,
     promptVersion,
     artistStmt: statement,
     imagePrompt,
-    imageUrl,
+    imageB64,
     status: "done",
-    meta: { promptText: V2_NEUTRAL }, // Store prompt for reproducibility
+    meta: {
+      promptText: V2_NEUTRAL,
+      brushMetadata: metadata,
+    },
     createdAt: Date.now(),
   });
 
-  return { runGroupId, statement, imageUrl };
+  return { runGroupId, statement, imageB64 };
 });
 
-// Helper functions (abstracted for Phase 2 reuse)
+// Helper for Artist (same for all providers)
 async function generateArtist(modelSlug: string, prompt: string) {
   const chat = await openai.chat.completions.create({
     model: modelSlug,
@@ -185,20 +268,32 @@ async function generateArtist(modelSlug: string, prompt: string) {
   return { statement, imagePrompt };
 }
 
-async function generateBrush(modelSlug: string, imagePrompt: string) {
-  const img = await openai.images.generate({
-    model: modelSlug,
-    prompt: imagePrompt,
-    size: "1024x1024",
-  });
-
-  return { imageUrl: img.data[0].url! };
-}
+// Mutation to save the run (called from the action)
+export const saveRun = mutation(
+  async (
+    { db },
+    args: {
+      runGroupId: string;
+      artistSlug: string;
+      brushSlug: string;
+      promptVersion: string;
+      artistStmt: string;
+      imagePrompt: string;
+      imageB64: string;
+      status: string;
+      meta: any;
+      createdAt: number;
+    }
+  ) => {
+    await db.insert("runs", args);
+  }
+);
 ```
 
-> **Phase 2 ready:** The `generateArtist()` and `generateBrush()` helpers are
-> extracted so Phase 2 can loop over multiple Artists without duplicating logic.
-> The `runGroupId` allows grouping runs from the same experiment batch.
+> **Key changes:** Actions (not mutations) for external API calls. Brush
+> polymorphism via `getBrush()`. Base64 images instead of URLs. extracted so
+> Phase 2 can loop over multiple Artists without duplicating logic. The
+> `runGroupId` allows grouping runs from the same experiment batch.
 
 ---
 
