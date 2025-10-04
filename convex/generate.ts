@@ -64,5 +64,9 @@ async function generateBrush(modelSlug: string, imagePrompt: string) {
     size: "1024x1024",
   });
 
-  return { imageUrl: img.data[0].url! };
+  if (!img.data || !img.data[0]?.url) {
+    throw new Error("No image URL returned from DALL-E");
+  }
+
+  return { imageUrl: img.data[0].url };
 }
