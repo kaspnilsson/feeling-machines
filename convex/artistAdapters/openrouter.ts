@@ -56,6 +56,7 @@ export class OpenRouterArtist {
           { role: "user", content: userPrompt },
         ],
         temperature: 1.0,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -72,18 +73,24 @@ export class OpenRouterArtist {
       throw new Error("No content in OpenRouter response");
     }
 
-    // Parse the artist statement and image prompt using the expected format
-    const statementMatch = content.match(/===ARTIST STATEMENT===([\s\S]*?)===FINAL IMAGE PROMPT===/i);
-    const promptMatch = content.match(/===FINAL IMAGE PROMPT===([\s\S]*)$/i);
-
-    if (!statementMatch || !promptMatch) {
+    // Parse JSON response
+    let parsedResponse: { statement?: string; imagePrompt?: string };
+    try {
+      parsedResponse = JSON.parse(content);
+    } catch (error) {
       throw new Error(
-        `Invalid response format from ${this.config.model}. Expected ===ARTIST STATEMENT=== and ===FINAL IMAGE PROMPT=== sections.`
+        `Invalid JSON response from ${this.config.model}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
-    const statement = statementMatch[1].trim();
-    const imagePrompt = promptMatch[1].trim();
+    const statement = parsedResponse.statement?.trim();
+    const imagePrompt = parsedResponse.imagePrompt?.trim();
+
+    if (!statement || !imagePrompt) {
+      throw new Error(
+        `Missing required fields in JSON response from ${this.config.model}. Expected "statement" and "imagePrompt" fields.`
+      );
+    }
 
     // Get token usage
     const usage = data.usage || {};
