@@ -6,6 +6,8 @@ import {
   calculateBrightness,
   determineColorHarmony,
   calculateColorEntropy,
+  extractColorsFromImage,
+  analyzeColors,
 } from './analyze-colors';
 
 describe('Color Analysis', () => {
@@ -179,4 +181,95 @@ describe('Color Analysis', () => {
       expect(entropy).toBeGreaterThan(0);
     });
   });
+
+  describe('extractColorsFromImage', () => {
+    it('should extract colors from image buffer', async () => {
+      // Create a simple test image: 10x10 red square
+      const testImageBuffer = await createTestImage(255, 0, 0);
+
+      const colors = await extractColorsFromImage(testImageBuffer);
+
+      expect(colors).toBeDefined();
+      expect(colors.length).toBeGreaterThan(0);
+      expect(colors.length).toBeLessThanOrEqual(8); // Should extract up to 8 colors
+
+      // Should have red as dominant color
+      const dominantColor = colors[0];
+      expect(dominantColor.rgb[0]).toBeGreaterThan(200); // Red channel
+      expect(dominantColor.percentage).toBeGreaterThan(50); // Majority of image
+    });
+
+    it('should return colors sorted by percentage', async () => {
+      const testImageBuffer = await createTestImage(100, 150, 200);
+
+      const colors = await extractColorsFromImage(testImageBuffer);
+
+      // Percentages should be in descending order
+      for (let i = 0; i < colors.length - 1; i++) {
+        expect(colors[i].percentage).toBeGreaterThanOrEqual(colors[i + 1].percentage);
+      }
+    });
+
+    it('should have percentages that sum to ~100', async () => {
+      const testImageBuffer = await createTestImage(128, 128, 128);
+
+      const colors = await extractColorsFromImage(testImageBuffer);
+
+      const totalPercentage = colors.reduce((sum, c) => sum + c.percentage, 0);
+      expect(totalPercentage).toBeGreaterThan(90);
+      expect(totalPercentage).toBeLessThanOrEqual(105); // Allow slight rounding error
+    });
+  });
+
+  describe('analyzeColors (full pipeline)', () => {
+    it('should analyze image and return complete analysis', async () => {
+      const testImageBuffer = await createTestImage(255, 100, 50);
+
+      const result = await analyzeColors({
+        runId: 'test-run-123',
+        artistSlug: 'gpt-5-mini',
+        brushSlug: 'test-brush',
+        imageBuffer: testImageBuffer,
+      });
+
+      expect(result.runId).toBe('test-run-123');
+      expect(result.artistSlug).toBe('gpt-5-mini');
+      expect(result.dominantColors).toBeDefined();
+      expect(result.temperature).toBeGreaterThanOrEqual(-1);
+      expect(result.temperature).toBeLessThanOrEqual(1);
+      expect(result.saturation).toBeGreaterThanOrEqual(0);
+      expect(result.saturation).toBeLessThanOrEqual(1);
+      expect(['complementary', 'analogous', 'triadic', 'monochromatic']).toContain(result.colorHarmony);
+    });
+  });
 });
+
+/**
+ * Helper to create a simple solid-color test image
+ */
+async function createTestImage(r: number, g: number, b: number): Promise<Buffer> {
+  // Dynamically import sharp to avoid issues in test environment
+  const sharp = (await import('sharp')).default;
+
+  // Create a 10x10 image with a solid color
+  const width = 10;
+  const height = 10;
+  const channels = 3;
+  const buffer = Buffer.alloc(width * height * channels);
+
+  for (let i = 0; i < width * height; i++) {
+    buffer[i * 3] = r;
+    buffer[i * 3 + 1] = g;
+    buffer[i * 3 + 2] = b;
+  }
+
+  return sharp(buffer, {
+    raw: {
+      width,
+      height,
+      channels,
+    },
+  })
+    .png()
+    .toBuffer();
+}

@@ -193,16 +193,80 @@ export function calculateColorEntropy(colors: Array<{ percentage: number }>): nu
 }
 
 /**
- * Analyze color palette from dominant colors
- * TODO: In future, integrate with image processing library to extract colors
+ * Extract dominant colors from an image buffer using node-vibrant
+ */
+export async function extractColorsFromImage(imageBuffer: Buffer): Promise<DominantColor[]> {
+  const { Vibrant } = await import('node-vibrant/node');
+
+  const palette = await Vibrant.from(imageBuffer).getPalette();
+
+  const colors: Array<{ rgb: [number, number, number]; population: number }> = [];
+
+  // Extract all available swatches
+  Object.values(palette).forEach((swatch) => {
+    if (swatch) {
+      colors.push({
+        rgb: swatch.rgb as [number, number, number],
+        population: swatch.population,
+      });
+    }
+  });
+
+  // Calculate total population
+  const totalPopulation = colors.reduce((sum, c) => sum + c.population, 0);
+
+  // Convert to percentages and format
+  const dominantColors: DominantColor[] = colors
+    .map(c => ({
+      hex: rgbToHex(...c.rgb),
+      rgb: c.rgb.map(Math.round) as [number, number, number],
+      percentage: (c.population / totalPopulation) * 100,
+    }))
+    .sort((a, b) => b.percentage - a.percentage) // Sort by percentage descending
+    .slice(0, 8); // Take top 8 colors
+
+  return dominantColors;
+}
+
+/**
+ * Fetch image from URL and extract colors
+ */
+export async function extractColorsFromUrl(imageUrl: string): Promise<DominantColor[]> {
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const imageBuffer = Buffer.from(arrayBuffer);
+
+  return extractColorsFromImage(imageBuffer);
+}
+
+/**
+ * Analyze color palette - now supports both imageBuffer and pre-computed colors
  */
 export async function analyzeColors(input: {
   runId: string;
   artistSlug: string;
   brushSlug: string;
-  dominantColors: DominantColor[];
+  imageBuffer?: Buffer;
+  imageUrl?: string;
+  dominantColors?: DominantColor[];
 }): Promise<ColorAnalysis> {
-  const { runId, artistSlug, brushSlug, dominantColors } = input;
+  const { runId, artistSlug, brushSlug, imageBuffer, imageUrl, dominantColors: providedColors } = input;
+
+  // Extract colors if not provided
+  let dominantColors: DominantColor[];
+  if (providedColors) {
+    dominantColors = providedColors;
+  } else if (imageBuffer) {
+    dominantColors = await extractColorsFromImage(imageBuffer);
+  } else if (imageUrl) {
+    dominantColors = await extractColorsFromUrl(imageUrl);
+  } else {
+    throw new Error('Must provide either imageBuffer, imageUrl, or dominantColors');
+  }
 
   const temperature = calculateColorTemperature(dominantColors);
   const saturation = calculateSaturation(dominantColors);

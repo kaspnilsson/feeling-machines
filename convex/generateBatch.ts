@@ -9,7 +9,6 @@ import { getArtist } from "./artistAdapters";
 import { getBrush } from "./brushes";
 import { SYSTEM_PROMPT, V2_NEUTRAL } from "./prompts";
 import { Id } from "./_generated/dataModel";
-import { analyzeSentiment } from "../scripts/analyze-sentiment";
 
 /**
  * Phase 2: Enqueue a batch of runs for multiple artists
@@ -88,7 +87,7 @@ export const enqueueRunGroup = mutation(
  * This is called by the scheduler for each artist in a run group
  */
 export const processSingleRun = internalAction(
-  async ({ runMutation }, { runId }: { runId: Id<"runs"> }) => {
+  async ({ runMutation, runAction }, { runId }: { runId: Id<"runs"> }) => {
     console.log(`[ProcessRun] Starting run ${runId}`);
 
     // Get run details
@@ -205,27 +204,13 @@ export const processSingleRun = internalAction(
         `[ProcessRun] ✓ Run ${runId} complete! Total: ${artistResponse.metadata.latencyMs + brushLatency}ms`
       );
 
-      // 5️⃣ Analyze sentiment (async, don't block completion)
-      try {
-        console.log(`[ProcessRun] Analyzing sentiment for run ${runId}...`);
-        const sentiment = await analyzeSentiment({
-          runId,
-          artistSlug: run.artistSlug,
-          statement: artistResponse.statement,
-        });
-
-        await runMutation(internal.generateBatch.saveSentiment, {
-          runId,
-          sentiment,
-        });
-
-        console.log(`[ProcessRun] ✓ Sentiment analysis complete`);
-      } catch (error: any) {
-        console.error(
-          `[ProcessRun] ⚠ Sentiment analysis failed (non-fatal): ${error.message}`
-        );
-        // Don't fail the run if sentiment analysis fails
-      }
+      // 5️⃣ Schedule analysis (runs in Node.js environment, non-blocking)
+      await runAction(internal.runAnalysis.analyzeRun, {
+        runId,
+        artistSlug: run.artistSlug,
+        statement: artistResponse.statement,
+        imageUrl,
+      });
     } catch (error: any) {
       console.error(`[ProcessRun] ✗ Run ${runId} failed:`, error.message);
 
@@ -353,6 +338,62 @@ export const saveSentiment = internalMutation(
       wordCount: sentiment.wordCount,
       uniqueWords: sentiment.uniqueWords,
       abstractness: sentiment.abstractness,
+      createdAt: Date.now(),
+    });
+  }
+);
+
+/**
+ * Internal mutation to save color analysis
+ */
+export const saveColorAnalysis = internalMutation(
+  async (
+    { db },
+    {
+      runId,
+      colorAnalysis,
+    }: {
+      runId: Id<"runs">;
+      colorAnalysis: any;
+    }
+  ) => {
+    await db.insert("color_analysis", {
+      runId,
+      artistSlug: colorAnalysis.artistSlug,
+      dominantColors: colorAnalysis.dominantColors,
+      temperature: colorAnalysis.temperature,
+      avgSaturation: colorAnalysis.saturation,
+      harmony: colorAnalysis.colorHarmony,
+      createdAt: Date.now(),
+    });
+  }
+);
+
+/**
+ * Internal mutation to save materiality analysis
+ */
+export const saveMaterialityAnalysis = internalMutation(
+  async (
+    { db },
+    {
+      runId,
+      materialityAnalysis,
+    }: {
+      runId: Id<"runs">;
+      materialityAnalysis: any;
+    }
+  ) => {
+    // Extract just the material strings from MaterialClassification objects
+    const materials = materialityAnalysis.materials.map((m: any) => m.material);
+
+    await db.insert("materiality_analysis", {
+      runId,
+      artistSlug: materialityAnalysis.artistSlug,
+      materials,
+      concreteMaterials: materialityAnalysis.concreteMedia,
+      speculativeMaterials: materialityAnalysis.speculativeMedia,
+      impossibilityScore: materialityAnalysis.impossibilityScore,
+      technicalDetail: materialityAnalysis.technicalDetail,
       createdAt: Date.now(),
     });
   }
