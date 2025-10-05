@@ -77,9 +77,13 @@ export default function InsightsPage() {
   const sentimentComparison = useQuery(
     api.sentiment.compareArtistSentiments
   ) as SentimentRow[] | undefined;
+  const colorComparison = useQuery(api.colors.compareArtistColors);
+  const materialityComparison = useQuery(api.materiality.compareArtistMateriality);
 
   const isLoading = sentimentComparison === undefined;
   const hasData = !!sentimentComparison && sentimentComparison.length > 0;
+  const hasColorData = !!colorComparison && colorComparison.length > 0;
+  const hasMaterialityData = !!materialityComparison && materialityComparison.length > 0;
 
   const summary = useMemo(() => {
     if (!hasData) return null;
@@ -216,25 +220,55 @@ export default function InsightsPage() {
             <section className="space-y-6">
               <SectionHeading
                 title="Color palette explorer"
-                description="Dominant swatches and tonal tendencies for each Artist — wired to integrate the color analysis pipeline as soon as data lands."
+                description={
+                  hasColorData
+                    ? "Dominant swatches and tonal tendencies extracted from generated images."
+                    : "Dominant swatches and tonal tendencies for each Artist — wired to integrate the color analysis pipeline as soon as data lands."
+                }
               />
               <div className="grid gap-4 md:grid-cols-3">
-                {paletteSpotlights.map((palette) => (
-                  <ColorPaletteCard key={palette.artistSlug} palette={palette} />
-                ))}
+                {hasColorData ? (
+                  colorComparison.map((color) => (
+                    <ColorDataCard key={color.artistSlug} data={color} />
+                  ))
+                ) : (
+                  paletteSpotlights.map((palette) => (
+                    <ColorPaletteCard key={palette.artistSlug} palette={palette} />
+                  ))
+                )}
               </div>
+              {!hasColorData && (
+                <p className="text-xs text-muted-foreground">
+                  📊 Color analysis runs automatically on generated images. Data will appear here as batches complete.
+                </p>
+              )}
             </section>
 
             <section className="space-y-6">
               <SectionHeading
                 title="Materiality signals"
-                description="Compare the balance of concrete vs speculative mediums each Artist gravitates toward."
+                description={
+                  hasMaterialityData
+                    ? "Balance of concrete vs speculative materials across artist statements."
+                    : "Compare the balance of concrete vs speculative mediums each Artist gravitates toward."
+                }
               />
               <div className="grid gap-4 md:grid-cols-3">
-                {materialitySpotlights.map((item) => (
-                  <MaterialityCard key={item.artistSlug} materiality={item} />
-                ))}
+                {hasMaterialityData ? (
+                  materialityComparison.map((mat) => (
+                    <MaterialityDataCard key={mat.artistSlug} data={mat} />
+                  ))
+                ) : (
+                  materialitySpotlights.map((item) => (
+                    <MaterialityCard key={item.artistSlug} materiality={item} />
+                  ))
+                )}
               </div>
+              {!hasMaterialityData && (
+                <p className="text-xs text-muted-foreground">
+                  📊 Materiality analysis runs automatically on artist statements. Data will appear here as batches complete.
+                </p>
+              )}
             </section>
           </>
         ) : (
@@ -392,6 +426,147 @@ function MaterialityCard({
               <li key={item}>• {item}</li>
             ))}
           </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ColorDataCard({
+  data,
+}: {
+  data: {
+    artistSlug: string;
+    count: number;
+    avgTemperature: number;
+    avgSaturation: number;
+    harmonyCounts: Record<string, number>;
+  };
+}) {
+  const tempLabel =
+    data.avgTemperature > 0.3
+      ? "Warm"
+      : data.avgTemperature < -0.3
+        ? "Cool"
+        : "Neutral";
+
+  const topHarmony = Object.entries(data.harmonyCounts).sort(
+    ([, a], [, b]) => b - a
+  )[0];
+
+  return (
+    <Card className="border-border/60 bg-card">
+      <CardContent className="space-y-4 p-6">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">
+            {data.artistSlug}
+          </h3>
+          <Badge variant="outline" className="w-fit text-xs">
+            {data.count} images analyzed
+          </Badge>
+        </div>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Temperature</span>
+              <span className="font-medium text-foreground">{tempLabel}</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 via-gray-500 to-orange-500"
+                style={{
+                  width: `${((data.avgTemperature + 1) / 2) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Saturation</span>
+              <span className="font-medium text-foreground">
+                {(data.avgSaturation * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${data.avgSaturation * 100}%` }}
+              />
+            </div>
+          </div>
+          {topHarmony && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Top harmony</span>
+              <span className="font-medium text-foreground capitalize">
+                {topHarmony[0]}
+              </span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MaterialityDataCard({
+  data,
+}: {
+  data: {
+    artistSlug: string;
+    count: number;
+    avgImpossibility: number;
+    avgTechnicalDetail: number;
+    totalUniqueMaterials: number;
+    concreteCount: number;
+    speculativeCount: number;
+  };
+}) {
+  return (
+    <Card className="border-border/60 bg-card">
+      <CardContent className="space-y-4 p-6">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">
+            {data.artistSlug}
+          </h3>
+          <Badge variant="outline" className="w-fit text-xs">
+            {data.count} statements analyzed
+          </Badge>
+        </div>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Impossibility</span>
+              <span className="font-medium text-foreground">
+                {(data.avgImpossibility * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-purple-500"
+                style={{ width: `${data.avgImpossibility * 100}%` }}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Technical detail</span>
+              <span className="font-medium text-foreground">
+                {(data.avgTechnicalDetail * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-accent"
+                style={{ width: `${data.avgTechnicalDetail * 100}%` }}
+              />
+            </div>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Materials</span>
+            <span className="font-medium text-foreground">
+              {data.concreteCount} concrete / {data.speculativeCount} speculative
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>

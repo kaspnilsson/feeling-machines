@@ -34,6 +34,38 @@ export default defineSchema({
     uniqueWords: v.number(),
     abstractness: v.number(), // 0 to 1
     createdAt: v.number(),
-  }).index("by_run", ["runId"])
+  })
+    .index("by_run", ["runId"])
+    .index("by_artist", ["artistSlug"]),
+
+  color_analysis: defineTable({
+    runId: v.id("runs"), // Link to run
+    artistSlug: v.string(),
+    dominantColors: v.array(
+      v.object({
+        hex: v.string(),
+        rgb: v.array(v.number()),
+        percentage: v.number(),
+      })
+    ),
+    temperature: v.number(), // -1 (cool) to 1 (warm)
+    avgSaturation: v.number(), // 0 to 1
+    harmony: v.string(), // "complementary" | "analogous" | "triadic" | "monochromatic"
+    createdAt: v.number(),
+  })
+    .index("by_run", ["runId"])
+    .index("by_artist", ["artistSlug"]),
+
+  materiality_analysis: defineTable({
+    runId: v.id("runs"), // Link to run
+    artistSlug: v.string(),
+    materials: v.array(v.string()),
+    concreteMaterials: v.array(v.string()),
+    speculativeMaterials: v.array(v.string()),
+    impossibilityScore: v.number(), // 0 (all concrete) to 1 (all speculative)
+    technicalDetail: v.number(), // 0 to 1
+    createdAt: v.number(),
+  })
+    .index("by_run", ["runId"])
     .index("by_artist", ["artistSlug"]),
 });
