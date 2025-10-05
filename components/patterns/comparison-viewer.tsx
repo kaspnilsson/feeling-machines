@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InsightBadge } from "@/components/patterns/insight-badge";
 import { AlertCircle, XCircle } from "lucide-react";
 
 interface RunMeta {
@@ -184,10 +183,3 @@ export function ComparisonViewer({
   );
 }
 
-function statusLabel(status: string) {
-  if (status === "done") return "Done";
-  if (status === "failed") return "Failed";
-  if (status === "generating") return "Generating";
-  if (status === "queued") return "Queued";
-  return status;
-}
