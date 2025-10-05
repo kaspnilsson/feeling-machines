@@ -34,7 +34,7 @@ export function RunGroupCard({
         : isQueued
           ? "Queued"
           : "In progress";
-      const statusVariant = isComplete
+      const statusVariant: "default" | "destructive" | "outline" | "secondary" = isComplete
         ? "default"
         : isQueued
           ? "outline"

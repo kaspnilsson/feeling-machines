@@ -76,7 +76,7 @@ export default function Home() {
           onOpenChange={setIsDialogOpen}
         />
 
-        <HowItWorksBanner onCreateComparison={() => setIsDialogOpen(true)} />
+        <HowItWorksBanner />
 
         <Separator className="border-border/60" />
 
