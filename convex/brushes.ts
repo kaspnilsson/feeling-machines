@@ -169,11 +169,31 @@ export class NanoBananaBrush extends Brush {
   }
 }
 
-// Brush registry - maps slug to brush instance
-export const BRUSH_REGISTRY: Record<string, Brush> = {
-  "gemini-2.5-flash-image": new NanoBananaBrush(),
-  "gpt-image-1": new GPTImage1Brush(),
-};
+import { BRUSHES } from "./artists";
+
+/**
+ * Brush registry - dynamically built from BRUSHES config
+ * This ensures a single source of truth for brush configuration
+ */
+export const BRUSH_REGISTRY: Record<string, Brush> = Object.fromEntries(
+  BRUSHES.map((config) => {
+    let brush: Brush;
+
+    // Map slug to brush class
+    switch (config.slug) {
+      case "gemini-2.5-flash-image":
+        brush = new NanoBananaBrush();
+        break;
+      case "gpt-image-1":
+        brush = new GPTImage1Brush();
+        break;
+      default:
+        throw new Error(`Unknown brush slug: ${config.slug}`);
+    }
+
+    return [config.slug, brush];
+  })
+);
 
 // Get brush by slug
 export function getBrush(slug: string): Brush {

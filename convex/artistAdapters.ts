@@ -251,30 +251,43 @@ export class OpenRouterAdapter extends ArtistAdapter {
   }
 }
 
+import { ARTISTS } from "./artists";
+
 /**
- * Artist registry - maps slug to adapter instance
+ * Artist registry - dynamically built from ARTISTS config
+ * This ensures a single source of truth for artist configuration
  */
-export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = {
-  "gpt-5-mini": new OpenAIArtist("gpt-5-mini", "GPT-5 Mini"),
-  "claude-sonnet-4-5": new AnthropicArtist(
-    "claude-sonnet-4-5",
-    "Claude Sonnet 4.5"
-  ),
-  "gemini-2.5-flash": new GoogleArtist(
-    "gemini-2.5-flash",
-    "Gemini 2.5 Flash"
-  ),
-  "grok-2-1212": new OpenRouterAdapter(
-    "grok-2-1212",
-    "Grok 2 (1212)",
-    "x-ai/grok-2-1212"
-  ),
-  "deepseek-chat": new OpenRouterAdapter(
-    "deepseek-chat",
-    "DeepSeek Chat",
-    "deepseek/deepseek-chat"
-  ),
-};
+export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = Object.fromEntries(
+  ARTISTS.map((config) => {
+    let adapter: ArtistAdapter;
+
+    switch (config.provider) {
+      case "openai":
+        adapter = new OpenAIArtist(config.slug, config.displayName);
+        break;
+      case "anthropic":
+        adapter = new AnthropicArtist(config.slug, config.displayName);
+        break;
+      case "google":
+        adapter = new GoogleArtist(config.slug, config.displayName);
+        break;
+      case "openrouter":
+        if (!config.openrouterModel) {
+          throw new Error(`OpenRouter model missing for ${config.slug}`);
+        }
+        adapter = new OpenRouterAdapter(
+          config.slug,
+          config.displayName,
+          config.openrouterModel
+        );
+        break;
+      default:
+        throw new Error(`Unknown provider: ${config.provider}`);
+    }
+
+    return [config.slug, adapter];
+  })
+);
 
 /**
  * Get artist adapter by slug

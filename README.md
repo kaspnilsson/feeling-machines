@@ -22,7 +22,7 @@ Feeling Machines now ships two tightly coupled experiences:
 
 | Concept        | Description                                                                      | Examples                                                     |
 | -------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Artist**     | The reasoning model that imagines the artwork and writes the "artist statement." | `gpt-5-mini`, `claude-sonnet-4-5`, `gemini-2.5-flash`, `grok-2-1212`, `deepseek-chat` |
+| **Artist**     | The reasoning model that imagines the artwork and writes the "artist statement." | `gpt-5-mini`, `claude-sonnet-4-5`, `gemini-2.5-flash`, `grok-4-fast`, `deepseek-chat` |
 | **Brush**      | The image model that renders the Artist's prompt into an image.                  | `gemini-2.5-flash-image`, `gpt-image-1`                |
 | **Prompt Set** | Canonical introspection prompt template; defines how Artists are queried.        | `v2-neutral`, `v2-artificial`, `persona-digital-monk`        |
 | **Run**        | One complete execution of Artist → Brush → Output.                               | `{ artist, brush, promptVersion, seed, statement, image }`   |

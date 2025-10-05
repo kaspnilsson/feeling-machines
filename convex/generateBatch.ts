@@ -4,7 +4,7 @@ import {
   internalMutation,
 } from "./_generated/server";
 import { internal, api } from "./_generated/api";
-import { ARTISTS, DEFAULT_BRUSH } from "./artists";
+import { ARTISTS, BRUSHES } from "./artists";
 import { getArtist } from "./artistAdapters";
 import { getBrush } from "./brushes";
 import { SYSTEM_PROMPT, V2_NEUTRAL } from "./prompts";
@@ -24,53 +24,67 @@ export const enqueueRunGroup = mutation(
       promptVersion = "v2-neutral",
       artistSlugs,
       brushSlug,
+      iterations = 1,
     }: {
       promptVersion?: string;
-      artistSlugs?: string[];
-      brushSlug?: string;
+      artistSlugs: string[];
+      brushSlug: string;
+      iterations?: number;
     }
   ) => {
     const runGroupId = crypto.randomUUID();
 
-    // Use provided slugs or defaults
-    const selectedArtists = artistSlugs
-      ? ARTISTS.filter((a) => artistSlugs.includes(a.slug))
-      : ARTISTS;
-    const brush = brushSlug
-      ? { slug: brushSlug }
-      : DEFAULT_BRUSH;
+    if (!artistSlugs || artistSlugs.length === 0) {
+      throw new Error("At least one artist must be selected");
+    }
+
+    if (!brushSlug) {
+      throw new Error("A brush must be selected");
+    }
+
+    const selectedArtists = ARTISTS.filter((a) => artistSlugs.includes(a.slug));
+
+    if (selectedArtists.length === 0) {
+      throw new Error(`No valid artists found for slugs: ${artistSlugs.join(", ")}`);
+    }
+
+    const brush = { slug: brushSlug };
 
     console.log(
-      `🎨 [EnqueueRunGroup] Creating run group ${runGroupId} with ${selectedArtists.length} artists`
+      `🎨 [EnqueueRunGroup] Creating run group ${runGroupId} with ${selectedArtists.length} artists × ${iterations} iterations`
     );
 
     const runIds: Id<"runs">[] = [];
 
+    // Create runs for each artist × iteration combination
     for (const artist of selectedArtists) {
-      // Create placeholder run
-      const runId = await db.insert("runs", {
-        runGroupId,
-        artistSlug: artist.slug,
-        brushSlug: brush.slug,
-        promptVersion,
-        artistStmt: "",
-        imagePrompt: "",
-        imageUrl: null,
-        status: "queued",
-        meta: {
-          enqueuedAt: Date.now(),
-        },
-        createdAt: Date.now(),
-      });
+      for (let i = 0; i < iterations; i++) {
+        // Create placeholder run
+        const runId = await db.insert("runs", {
+          runGroupId,
+          artistSlug: artist.slug,
+          brushSlug: brush.slug,
+          promptVersion,
+          artistStmt: "",
+          imagePrompt: "",
+          imageUrl: null,
+          status: "queued",
+          meta: {
+            enqueuedAt: Date.now(),
+            iteration: i + 1,
+          },
+          createdAt: Date.now(),
+        });
 
-      runIds.push(runId);
+        runIds.push(runId);
 
-      console.log(`  → Queued run ${runId} for ${artist.slug} + ${brush.slug}`);
+        console.log(`  → Queued run ${runId} for ${artist.slug} + ${brush.slug} (iteration ${i + 1}/${iterations})`);
 
-      // Schedule background action to process this run
-      await scheduler.runAfter(0, internal.generateBatch.processSingleRun, {
-        runId,
-      });
+        // Schedule background action to process this run
+        await scheduler.runAfter(0, internal.generateBatch.processSingleRun, {
+          runId,
+        });
+      }
     }
 
     console.log(

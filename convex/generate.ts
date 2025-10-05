@@ -1,7 +1,7 @@
 import { action, mutation } from "./_generated/server";
 import { api } from "./_generated/api";
 import { V2_NEUTRAL, SYSTEM_PROMPT } from "./prompts";
-import { DEFAULT_ARTIST, DEFAULT_BRUSH } from "./artists";
+import { ARTISTS, BRUSHES } from "./artists";
 import { getBrush } from "./brushes";
 import { getArtist } from "./artistAdapters";
 
@@ -9,8 +9,9 @@ export const generate = action(
   async ({
     runMutation,
   }): Promise<{ runGroupId: string; statement: string; storageId: string }> => {
-    const artist = DEFAULT_ARTIST;
-    const brushConfig = DEFAULT_BRUSH;
+    // Use first artist and brush as defaults
+    const artist = ARTISTS[0];
+    const brushConfig = BRUSHES[0];
     const brush = getBrush(brushConfig.slug);
     const runGroupId = crypto.randomUUID();
     const promptVersion = "v2-neutral";

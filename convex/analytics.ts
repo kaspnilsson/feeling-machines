@@ -98,7 +98,7 @@ export const getOverallStats = query(async ({ db }) => {
 });
 
 /**
- * List all unique run groups
+ * List all unique run groups with sample thumbnails
  */
 export const listRunGroups = query(async ({ db }) => {
   const allRuns = await db.query("runs").order("desc").collect();
@@ -110,7 +110,13 @@ export const listRunGroups = query(async ({ db }) => {
       createdAt: number;
       totalRuns: number;
       completedRuns: number;
+      failedRuns: number;
       artists: string[];
+      sampleRuns: Array<{
+        artistSlug: string;
+        imageUrl: string | null;
+        status: string;
+      }>;
     }
   >();
 
@@ -121,15 +127,27 @@ export const listRunGroups = query(async ({ db }) => {
         createdAt: run.createdAt,
         totalRuns: 0,
         completedRuns: 0,
+        failedRuns: 0,
         artists: [],
+        sampleRuns: [],
       });
     }
 
     const group = groupsMap.get(run.runGroupId)!;
     group.totalRuns++;
     if (run.status === "done" || run.status === "failed") group.completedRuns++;
+    if (run.status === "failed") group.failedRuns++;
     if (!group.artists.includes(run.artistSlug)) {
       group.artists.push(run.artistSlug);
+    }
+
+    // Add up to 5 sample runs per group (prioritize completed ones)
+    if (group.sampleRuns.length < 5) {
+      group.sampleRuns.push({
+        artistSlug: run.artistSlug,
+        imageUrl: run.imageUrl,
+        status: run.status,
+      });
     }
   });
 

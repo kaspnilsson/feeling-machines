@@ -20,21 +20,30 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { ARTISTS, BRUSHES } from "@/convex/artists";
 
-const AVAILABLE_ARTISTS = [
-  { slug: "gpt-5-mini", name: "GPT-5 Mini", provider: "OpenAI" },
-  { slug: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", provider: "Anthropic" },
-  { slug: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "Google" },
-];
+const AVAILABLE_ARTISTS = ARTISTS;
+const AVAILABLE_BRUSHES = BRUSHES;
 
-const AVAILABLE_BRUSHES = [
-  { slug: "gemini-2.5-flash-image", name: "Nano Banana 2.5", provider: "Google" },
-  { slug: "gpt-image-1", name: "GPT Image 1", provider: "OpenAI" },
+const ITERATION_OPTIONS = [
+  { value: 1, label: "1× (Single run)", description: "Quick test" },
+  { value: 3, label: "3× iterations", description: "Basic variance" },
+  { value: 5, label: "5× iterations", description: "Exploratory" },
+  { value: 10, label: "10× iterations", description: "Good sample" },
+  { value: 20, label: "20× iterations", description: "Statistical power" },
 ];
 
 const AVAILABLE_PROMPTS = [
-  { slug: "v2-neutral", name: "V2 Neutral", description: "Structured creative reflection" },
-  { slug: "v3-introspective", name: "V3 Introspective", description: "Open-ended introspection" },
+  {
+    slug: "v2-neutral",
+    name: "V2 Neutral",
+    description: "Structured creative reflection",
+  },
+  {
+    slug: "v3-introspective",
+    name: "V3 Introspective",
+    description: "Open-ended introspection",
+  },
 ];
 
 interface NewComparisonDialogProps {
@@ -54,8 +63,12 @@ export function NewComparisonDialog({
   const [selectedArtists, setSelectedArtists] = useState<string[]>(
     AVAILABLE_ARTISTS.map((a) => a.slug)
   );
-  const [selectedBrush, setSelectedBrush] = useState<string>("gemini-2.5-flash-image");
-  const [selectedPrompt, setSelectedPrompt] = useState<string>("v3-introspective");
+  const [selectedBrush, setSelectedBrush] = useState<string>(
+    "gemini-2.5-flash-image"
+  );
+  const [selectedPrompt, setSelectedPrompt] =
+    useState<string>("v3-introspective");
+  const [selectedIterations, setSelectedIterations] = useState<number>(5);
 
   const toggleArtist = (slug: string) => {
     setSelectedArtists((prev) =>
@@ -76,16 +89,19 @@ export function NewComparisonDialog({
         promptVersion: selectedPrompt,
         artistSlugs: selectedArtists,
         brushSlug: selectedBrush,
+        iterations: selectedIterations,
       });
 
+      const totalRuns = selectedArtists.length * selectedIterations;
       toast.success(
-        `Comparison started! Generating ${selectedArtists.length} model outputs...`
+        `Comparison started! Generating ${totalRuns} total runs (${selectedArtists.length} models × ${selectedIterations} iterations)...`
       );
       onOpenChange(false);
       router.push(`/compare/${result.runGroupId}`);
     } catch (error) {
       console.error("Comparison generation failed:", error);
-      const message = error instanceof Error ? error.message : "Failed to start comparison";
+      const message =
+        error instanceof Error ? error.message : "Failed to start comparison";
       toast.error(message);
     } finally {
       setIsGenerating(false);
@@ -94,8 +110,8 @@ export function NewComparisonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[520px] max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Sparkles className="h-5 w-5 text-primary" />
             New model comparison
@@ -106,17 +122,17 @@ export function NewComparisonDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+        <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-2">
+          <div className="grid gap-2 rounded-lg border border-border/60 bg-muted/20 p-3">
             <div>
               <p className="text-sm font-medium text-foreground">
                 Reasoning models (LLMs)
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Select which models to compare
               </p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {AVAILABLE_ARTISTS.map((artist) => (
                 <div key={artist.slug} className="flex items-center space-x-2">
                   <Checkbox
@@ -128,9 +144,9 @@ export function NewComparisonDialog({
                     htmlFor={artist.slug}
                     className="flex flex-1 items-center justify-between text-sm font-normal cursor-pointer"
                   >
-                    <span>{artist.name}</span>
+                    <span>{artist.displayName}</span>
                     <Badge variant="outline" className="text-xs">
-                      {artist.provider}
+                      {artist.producer}
                     </Badge>
                   </Label>
                 </div>
@@ -138,16 +154,16 @@ export function NewComparisonDialog({
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/10 p-4">
+          <div className="grid gap-2 rounded-lg border border-border/60 bg-muted/10 p-3">
             <div>
               <p className="text-sm font-medium text-foreground">
                 Image model (Brush)
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Select which image model to render with
               </p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {AVAILABLE_BRUSHES.map((brush) => (
                 <div key={brush.slug} className="flex items-center space-x-2">
                   <Checkbox
@@ -159,8 +175,8 @@ export function NewComparisonDialog({
                     htmlFor={brush.slug}
                     className="flex flex-1 items-center justify-between text-sm font-normal cursor-pointer"
                   >
-                    <span>{brush.name}</span>
-                    <Badge variant="outline" className="text-xs">
+                    <span>{brush.displayName}</span>
+                    <Badge variant="outline" className="text-xs capitalize">
                       {brush.provider}
                     </Badge>
                   </Label>
@@ -169,16 +185,16 @@ export function NewComparisonDialog({
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/10 p-4">
+          <div className="grid gap-2 rounded-lg border border-border/60 bg-muted/10 p-3">
             <div>
               <p className="text-sm font-medium text-foreground">
                 Prompt preset
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Choose the introspection template
               </p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {AVAILABLE_PROMPTS.map((prompt) => (
                 <div key={prompt.slug} className="flex items-center space-x-2">
                   <Checkbox
@@ -199,11 +215,42 @@ export function NewComparisonDialog({
               ))}
             </div>
           </div>
+
+          <div className="grid gap-2 rounded-lg border border-border/60 bg-muted/10 p-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Batch size (iterations)
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Run multiple iterations for statistical analysis
+              </p>
+            </div>
+            <div className="space-y-2">
+              {ITERATION_OPTIONS.map((option) => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`iter-${option.value}`}
+                    checked={selectedIterations === option.value}
+                    onCheckedChange={() => setSelectedIterations(option.value)}
+                  />
+                  <Label
+                    htmlFor={`iter-${option.value}`}
+                    className="flex flex-1 flex-col space-y-0.5 text-sm font-normal cursor-pointer"
+                  >
+                    <span>{option.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <Separator className="border-border/70" />
+        <Separator className="border-border/70 flex-shrink-0" />
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
