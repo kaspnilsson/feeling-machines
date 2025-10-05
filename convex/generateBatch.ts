@@ -37,6 +37,7 @@ export const enqueueRunGroup = mutation(
         promptVersion,
         artistStmt: "",
         imagePrompt: "",
+        imageUrl: null,
         status: "queued",
         meta: {
           enqueuedAt: Date.now(),
@@ -113,7 +114,7 @@ export const processSingleRun = internalAction(
       const brushLatency = Date.now() - startBrush;
       console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
 
-      // 3️⃣ Upload to storage
+      // 3️⃣ Upload to storage and get URL
       console.log(`[ProcessRun] Uploading to storage...`);
       const uploadUrl = await runMutation(api.generate.generateUploadUrl, {});
 
@@ -133,14 +134,24 @@ export const processSingleRun = internalAction(
       const { storageId } = (await uploadResponse.json()) as {
         storageId: string;
       };
-      console.log(`[ProcessRun] ✓ Uploaded to storage: ${storageId}`);
+
+      // Get the public URL for the image
+      const imageUrl = await runMutation(api.runs.getStorageUrl, {
+        storageId: storageId as any,
+      });
+
+      if (!imageUrl) {
+        throw new Error("Failed to get storage URL");
+      }
+
+      console.log(`[ProcessRun] ✓ Uploaded to storage with URL`);
 
       // 4️⃣ Complete run
       await runMutation(internal.generateBatch.completeRun, {
         runId,
         artistStmt: artistResponse.statement,
         imagePrompt: artistResponse.imagePrompt,
-        imageStorageId: storageId as any,
+        imageUrl,
         meta: {
           enqueuedAt: run.meta?.enqueuedAt,
           startedAt:
@@ -208,20 +219,20 @@ export const completeRun = internalMutation(
       runId,
       artistStmt,
       imagePrompt,
-      imageStorageId,
+      imageUrl,
       meta,
     }: {
       runId: Id<"runs">;
       artistStmt: string;
       imagePrompt: string;
-      imageStorageId: any;
+      imageUrl: string;
       meta: any;
     }
   ) => {
     await db.patch(runId, {
       artistStmt,
       imagePrompt,
-      imageStorageId,
+      imageUrl,
       status: "done",
       meta,
     });

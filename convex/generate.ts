@@ -71,7 +71,17 @@ export const generate = action(
       const { storageId } = (await uploadResponse.json()) as {
         storageId: string;
       };
-      console.log(`[Storage Step] ✓ Uploaded to storage: ${storageId}`);
+
+      // Get the public URL for the image
+      const imageUrl = await runMutation(api.runs.getStorageUrl, {
+        storageId: storageId as any,
+      });
+
+      if (!imageUrl) {
+        throw new Error("Failed to get storage URL");
+      }
+
+      console.log(`[Storage Step] ✓ Uploaded to storage with URL`);
 
       // 4️⃣ Persist metadata (via mutation since actions can't write directly)
       console.log(`[Save Step] Persisting to database...`);
@@ -82,7 +92,7 @@ export const generate = action(
         promptVersion,
         artistStmt: artistResponse.statement,
         imagePrompt: artistResponse.imagePrompt,
-        imageStorageId: storageId as any,
+        imageUrl,
         status: "done",
         meta: {
           promptText: V2_NEUTRAL,

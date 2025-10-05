@@ -101,17 +101,13 @@ function CompareHeader({
 
 function ArtworkCard({ run }: { run: any }) {
   const [showDetails, setShowDetails] = useState(false);
-  const imageUrl =
-    run.imageStorageId && run.status === "done"
-      ? useQuery(api.runs.getImageUrl, { storageId: run.imageStorageId })
-      : null;
 
   return (
     <Card className="overflow-hidden">
       <div className="relative aspect-square bg-muted">
-        {run.status === "done" && imageUrl ? (
+        {run.status === "done" && run.imageUrl ? (
           <img
-            src={imageUrl}
+            src={run.imageUrl}
             alt={`${run.artistSlug} artwork`}
             className="object-cover w-full h-full"
           />

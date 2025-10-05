@@ -9,7 +9,7 @@ export default defineSchema({
     promptVersion: v.string(), // "v2-neutral"
     artistStmt: v.string(),
     imagePrompt: v.string(),
-    imageStorageId: v.optional(v.id("_storage")), // Reference to file in Convex storage
+    imageUrl: v.union(v.string(), v.null()), // URL to image (null until generated)
     status: v.string(), // "queued" | "generating" | "done" | "failed"
     meta: v.optional(v.any()), // JSON for model params, cost, latency
     createdAt: v.number(),
