@@ -74,25 +74,52 @@ LLMs through their artistic output?_
 
 ## 🎯 Phase 3B: Hypothesis Validation
 
-**Goal:** Statistically validate hypotheses from exploratory phase.
+**Goal:** Statistically validate hypotheses from exploratory phase with rigorous statistical methodology.
+
+> **📊 See [Statistical Rigor Plan](./statistical-rigor-plan.md) for comprehensive implementation details**
 
 ### Methodology
 
 1. **Targeted Data Collection**
-   - 20× iterations per model for statistical power
+   - 20× iterations per model for statistical power (power analysis: 80% power to detect d=0.5)
    - Focused on metrics relevant to hypotheses
    - Possibly varied prompts if hypotheses require it
 
-2. **Statistical Testing**
-   - ANOVA for cross-model comparisons
-   - t-tests for pairwise differences
-   - Effect size calculations (Cohen's d)
-   - Confidence intervals and p-values
+2. **Statistical Testing Framework**
+   - **Descriptive statistics**: Mean, SD, quartiles, skewness, kurtosis
+   - **Confidence intervals**: 95% CI using bootstrap or t-distribution
+   - **ANOVA**: Cross-model comparisons with eta-squared effect size
+   - **Post-hoc tests**: Tukey HSD for pairwise comparisons
+   - **Effect sizes**: Cohen's d for all significant differences
+   - **Multiple comparison correction**: Bonferroni or Benjamini-Hochberg
+   - **Assumption validation**: Test normality (Shapiro-Wilk), homoscedasticity (Levene's)
 
 3. **Validation Criteria**
-   - p < 0.05 for statistical significance
-   - Effect size > 0.5 for practical significance
-   - Consistent patterns across prompt variations
+   - **Statistical significance**: p < 0.05 after multiple comparison correction
+   - **Practical significance**: Effect size (Cohen's d) > 0.5
+   - **Consistency**: Patterns hold across assumption checks
+   - **Transparency**: Report all tests, including non-significant results
+
+### Statistical Infrastructure
+
+**New Database Tables**:
+- `model_statistics` - Descriptive stats per model×metric
+- `statistical_comparisons` - Pairwise test results with effect sizes
+- `anova_results` - Cross-model ANOVA results with post-hoc tests
+
+**New Analysis Scripts**:
+- `scripts/statistical/compute-descriptive-stats.ts`
+- `scripts/statistical/run-anova-analysis.ts`
+- `scripts/statistical/calculate-effect-sizes.ts`
+- `scripts/statistical/validate-assumptions.ts`
+- `scripts/statistical/generate-statistical-report.ts`
+
+**Enhanced Visualizations**:
+- Distribution plots (box plots, violin plots) showing spread
+- Confidence interval error bars on all point estimates
+- Significance matrices (heatmaps of p-values)
+- Effect size visualizations (Cohen's d)
+- QQ plots for assumption validation
 
 ### Analysis Dimensions
 
