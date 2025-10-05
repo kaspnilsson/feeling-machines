@@ -11,11 +11,15 @@ export const ARTISTS: ArtistConfig[] = [
     displayName: "GPT-4o",
   },
   {
-    slug: "gpt-5",
-    provider: "openai",
-    displayName: "GPT-5",
+    slug: "claude-3-5-sonnet-20241022",
+    provider: "anthropic",
+    displayName: "Claude 3.5 Sonnet",
   },
-  // Phase 2+ will add: claude-3-opus, gemini-1.5-pro, etc.
+  {
+    slug: "gemini-2.0-flash-exp",
+    provider: "google",
+    displayName: "Gemini 2.0 Flash",
+  },
 ];
 
 export interface BrushConfig {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -9,6 +9,8 @@ import { Loader2, Sparkles, Wand2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +20,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+
+const AVAILABLE_ARTISTS = [
+  { slug: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
+  { slug: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", provider: "Anthropic" },
+  { slug: "gemini-2.0-flash-exp", name: "Gemini 2.0 Flash", provider: "Google" },
+];
+
+const AVAILABLE_BRUSHES = [
+  { slug: "gpt-image-1", name: "GPT Image 1", provider: "OpenAI" },
+  { slug: "dall-e-2", name: "DALL-E 2", provider: "OpenAI" },
+  { slug: "dall-e-3", name: "DALL-E 3", provider: "OpenAI" },
+];
+
+const AVAILABLE_PROMPTS = [
+  { slug: "v2-neutral", name: "V2 Neutral", description: "Structured creative reflection" },
+  { slug: "v3-introspective", name: "V3 Introspective", description: "Open-ended introspection" },
+];
 
 interface NewComparisonDialogProps {
   open: boolean;
@@ -32,11 +51,31 @@ export function NewComparisonDialog({
   const enqueueBatch = useMutation(api.generateBatch.enqueueRunGroup);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Initialize with all artists selected
+  const [selectedArtists, setSelectedArtists] = useState<string[]>(
+    AVAILABLE_ARTISTS.map((a) => a.slug)
+  );
+  const [selectedBrush, setSelectedBrush] = useState<string>("gpt-image-1");
+  const [selectedPrompt, setSelectedPrompt] = useState<string>("v3-introspective");
+
+  const toggleArtist = (slug: string) => {
+    setSelectedArtists((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    );
+  };
+
   const handleGenerate = async () => {
+    if (selectedArtists.length === 0) {
+      toast.error("Please select at least one reasoning model");
+      return;
+    }
+
     try {
       setIsGenerating(true);
       const result = await enqueueBatch({
-        promptVersion: "v2-neutral",
+        promptVersion: selectedPrompt,
+        artistSlugs: selectedArtists,
+        brushSlug: selectedBrush,
       });
       toast.success(
         `Comparison started! Generating ${result.artistCount} model outputs...`
@@ -68,61 +107,95 @@ export function NewComparisonDialog({
 
         <div className="space-y-4 py-2">
           <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Reasoning models (LLMs)
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  The batch runs every available reasoning model so you can
-                  compare how each one interprets the brief.
-                </p>
-              </div>
-              <Badge variant="outline" className="bg-card/90">
-                Included
-              </Badge>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Reasoning models (LLMs)
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Select which models to compare
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="default" className="bg-primary/90 text-primary-foreground">
-                LLM · GPT-4o mini
-              </Badge>
-              <Badge variant="default" className="bg-primary/90 text-primary-foreground">
-                LLM · GPT-4o
-              </Badge>
-            </div>
-          </div>
-
-          <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/10 p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Image model (Brush)
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Every prompt from the reasoning models is rendered with the
-                  same image model for apples-to-apples visuals.
-                </p>
-              </div>
-              <Badge variant="secondary" className="bg-muted/60">
-                Image · gpt-image-1
-              </Badge>
+            <div className="space-y-3">
+              {AVAILABLE_ARTISTS.map((artist) => (
+                <div key={artist.slug} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={artist.slug}
+                    checked={selectedArtists.includes(artist.slug)}
+                    onCheckedChange={() => toggleArtist(artist.slug)}
+                  />
+                  <Label
+                    htmlFor={artist.slug}
+                    className="flex flex-1 items-center justify-between text-sm font-normal cursor-pointer"
+                  >
+                    <span>{artist.name}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {artist.provider}
+                    </Badge>
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/10 p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Prompt preset
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Each model receives the same introspection template so their
-                  differences come from the model, not the instructions.
-                </p>
-              </div>
-              <Badge variant="outline" className="bg-card/90">
-                Prompt · v2-neutral
-              </Badge>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Image model (Brush)
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Select which image model to render with
+              </p>
+            </div>
+            <div className="space-y-3">
+              {AVAILABLE_BRUSHES.map((brush) => (
+                <div key={brush.slug} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={brush.slug}
+                    checked={selectedBrush === brush.slug}
+                    onCheckedChange={() => setSelectedBrush(brush.slug)}
+                  />
+                  <Label
+                    htmlFor={brush.slug}
+                    className="flex flex-1 items-center justify-between text-sm font-normal cursor-pointer"
+                  >
+                    <span>{brush.name}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {brush.provider}
+                    </Badge>
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/10 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Prompt preset
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Choose the introspection template
+              </p>
+            </div>
+            <div className="space-y-3">
+              {AVAILABLE_PROMPTS.map((prompt) => (
+                <div key={prompt.slug} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={prompt.slug}
+                    checked={selectedPrompt === prompt.slug}
+                    onCheckedChange={() => setSelectedPrompt(prompt.slug)}
+                  />
+                  <Label
+                    htmlFor={prompt.slug}
+                    className="flex flex-1 flex-col space-y-0.5 text-sm font-normal cursor-pointer"
+                  >
+                    <span>{prompt.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {prompt.description}
+                    </span>
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -17,18 +17,33 @@ import { Id } from "./_generated/dataModel";
 export const enqueueRunGroup = mutation(
   async (
     { db, scheduler },
-    { promptVersion = "v2-neutral" }: { promptVersion?: string }
+    {
+      promptVersion = "v2-neutral",
+      artistSlugs,
+      brushSlug,
+    }: {
+      promptVersion?: string;
+      artistSlugs?: string[];
+      brushSlug?: string;
+    }
   ) => {
     const runGroupId = crypto.randomUUID();
-    const brush = DEFAULT_BRUSH;
+
+    // Use provided slugs or defaults
+    const selectedArtists = artistSlugs
+      ? ARTISTS.filter((a) => artistSlugs.includes(a.slug))
+      : ARTISTS;
+    const brush = brushSlug
+      ? { slug: brushSlug }
+      : DEFAULT_BRUSH;
 
     console.log(
-      `🎨 [EnqueueRunGroup] Creating run group ${runGroupId} with ${ARTISTS.length} artists`
+      `🎨 [EnqueueRunGroup] Creating run group ${runGroupId} with ${selectedArtists.length} artists`
     );
 
     const runIds: Id<"runs">[] = [];
 
-    for (const artist of ARTISTS) {
+    for (const artist of selectedArtists) {
       // Create placeholder run
       const runId = await db.insert("runs", {
         runGroupId,
@@ -61,7 +76,7 @@ export const enqueueRunGroup = mutation(
 
     return {
       runGroupId,
-      artistCount: ARTISTS.length,
+      artistCount: selectedArtists.length,
       runIds,
     };
   }

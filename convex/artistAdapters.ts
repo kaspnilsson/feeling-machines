@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export interface ArtistResponse {
   fullText: string;
@@ -106,11 +108,131 @@ export class OpenAIArtist extends ArtistAdapter {
 }
 
 /**
+ * Estimate cost for Anthropic models based on token usage
+ */
+export function estimateAnthropicCost(
+  model: string,
+  usage: { input_tokens: number; output_tokens: number }
+): number {
+  const prices: Record<string, { input: number; output: number }> = {
+    "claude-3-5-sonnet-20241022": {
+      input: 3.0 / 1_000_000,
+      output: 15.0 / 1_000_000,
+    },
+  };
+
+  const price = prices[model] || prices["claude-3-5-sonnet-20241022"];
+  return usage.input_tokens * price.input + usage.output_tokens * price.output;
+}
+
+/**
+ * Estimate cost for Google models (currently free/experimental)
+ */
+export function estimateGoogleCost(
+  _model: string,
+  _usage: { promptTokenCount?: number; candidatesTokenCount?: number }
+): number {
+  // Gemini 2.0 Flash is currently free during experimental phase
+  return 0;
+}
+
+/**
+ * Anthropic Claude artist adapter
+ */
+export class AnthropicArtist extends ArtistAdapter {
+  constructor(slug: string, displayName: string) {
+    super(slug, displayName, "anthropic");
+  }
+
+  async generateArtistResponse(
+    systemPrompt: string,
+    userPrompt: string
+  ): Promise<ArtistResponse> {
+    const startTime = Date.now();
+
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    const response = await anthropic.messages.create({
+      model: this.slug,
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const fullText =
+      response.content[0].type === "text" ? response.content[0].text : "";
+    const { statement, imagePrompt } = parseArtistOutput(fullText);
+
+    return {
+      fullText,
+      statement,
+      imagePrompt,
+      metadata: {
+        model: this.slug,
+        tokens: response.usage.input_tokens + response.usage.output_tokens,
+        latencyMs: Date.now() - startTime,
+        costEstimate: estimateAnthropicCost(this.slug, response.usage),
+      },
+    };
+  }
+}
+
+/**
+ * Google Gemini artist adapter
+ */
+export class GoogleArtist extends ArtistAdapter {
+  constructor(slug: string, displayName: string) {
+    super(slug, displayName, "google");
+  }
+
+  async generateArtistResponse(
+    systemPrompt: string,
+    userPrompt: string
+  ): Promise<ArtistResponse> {
+    const startTime = Date.now();
+
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+    const model = genAI.getGenerativeModel({
+      model: this.slug,
+      systemInstruction: systemPrompt,
+    });
+
+    const result = await model.generateContent(userPrompt);
+    const fullText = result.response.text();
+    const { statement, imagePrompt } = parseArtistOutput(fullText);
+
+    const usage = result.response.usageMetadata;
+
+    return {
+      fullText,
+      statement,
+      imagePrompt,
+      metadata: {
+        model: this.slug,
+        tokens: (usage?.totalTokenCount ?? 0),
+        latencyMs: Date.now() - startTime,
+        costEstimate: estimateGoogleCost(this.slug, usage || {}),
+      },
+    };
+  }
+}
+
+/**
  * Artist registry - maps slug to adapter instance
  */
 export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = {
   "gpt-4o-mini": new OpenAIArtist("gpt-4o-mini", "GPT-4o Mini"),
   "gpt-4o": new OpenAIArtist("gpt-4o", "GPT-4o"),
+  "claude-3-5-sonnet-20241022": new AnthropicArtist(
+    "claude-3-5-sonnet-20241022",
+    "Claude 3.5 Sonnet"
+  ),
+  "gemini-2.0-flash-exp": new GoogleArtist(
+    "gemini-2.0-flash-exp",
+    "Gemini 2.0 Flash"
+  ),
 };
 
 /**
