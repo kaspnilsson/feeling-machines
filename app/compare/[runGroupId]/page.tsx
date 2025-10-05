@@ -234,16 +234,16 @@ function ArtworkCard({ run }: { run: any }) {
           </div>
         )}
 
-        <div className="absolute left-4 top-4 flex items-center gap-2">
+        <div className="absolute left-4 top-4 flex flex-col gap-2">
           <Badge
             variant="default"
-            className="bg-card/90 text-foreground shadow"
+            className="bg-card/90 text-foreground shadow w-fit"
           >
             LLM · {run.artistSlug}
           </Badge>
           <Badge
             variant="secondary"
-            className="bg-card/90 text-foreground shadow"
+            className="bg-card/90 text-foreground shadow w-fit"
           >
             Image · {run.brushSlug}
           </Badge>
