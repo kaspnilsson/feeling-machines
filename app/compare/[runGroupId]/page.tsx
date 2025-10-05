@@ -101,9 +101,10 @@ function CompareHeader({
 
 function ArtworkCard({ run }: { run: any }) {
   const [showDetails, setShowDetails] = useState(false);
-  const imageUrl = run.imageStorageId
-    ? useQuery(api.runs.getImageUrl, { storageId: run.imageStorageId })
-    : null;
+  const imageUrl =
+    run.imageStorageId && run.status === "done"
+      ? useQuery(api.runs.getImageUrl, { storageId: run.imageStorageId })
+      : null;
 
   return (
     <Card className="overflow-hidden">

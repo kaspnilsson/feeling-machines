@@ -37,7 +37,6 @@ export const enqueueRunGroup = mutation(
         promptVersion,
         artistStmt: "",
         imagePrompt: "",
-        imageStorageId: undefined as any,
         status: "queued",
         meta: {
           enqueuedAt: Date.now(),
