@@ -22,15 +22,14 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 const AVAILABLE_ARTISTS = [
-  { slug: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
-  { slug: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", provider: "Anthropic" },
-  { slug: "gemini-2.0-flash-exp", name: "Gemini 2.0 Flash", provider: "Google" },
+  { slug: "gpt-5-mini", name: "GPT-5 Mini", provider: "OpenAI" },
+  { slug: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", provider: "Anthropic" },
+  { slug: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "Google" },
 ];
 
 const AVAILABLE_BRUSHES = [
+  { slug: "gemini-2.5-flash-image", name: "Nano Banana 2.5", provider: "Google" },
   { slug: "gpt-image-1", name: "GPT Image 1", provider: "OpenAI" },
-  { slug: "dall-e-2", name: "DALL-E 2", provider: "OpenAI" },
-  { slug: "dall-e-3", name: "DALL-E 3", provider: "OpenAI" },
 ];
 
 const AVAILABLE_PROMPTS = [
@@ -55,7 +54,7 @@ export function NewComparisonDialog({
   const [selectedArtists, setSelectedArtists] = useState<string[]>(
     AVAILABLE_ARTISTS.map((a) => a.slug)
   );
-  const [selectedBrush, setSelectedBrush] = useState<string>("gpt-image-1");
+  const [selectedBrush, setSelectedBrush] = useState<string>("gemini-2.5-flash-image");
   const [selectedPrompt, setSelectedPrompt] = useState<string>("v3-introspective");
 
   const toggleArtist = (slug: string) => {

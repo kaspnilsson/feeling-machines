@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Base interface for all brushes
 export interface BrushResult {
@@ -128,11 +129,49 @@ export class DallE3Brush extends Brush {
   }
 }
 
+// Nano Banana (Gemini 2.5 Flash Image) brush
+export class NanoBananaBrush extends Brush {
+  constructor() {
+    super("gemini-2.5-flash-image", "Nano Banana 2.5", "google");
+  }
+
+  async generate(prompt: string): Promise<BrushResult> {
+    console.log(`  → Calling ${this.slug} (${this.provider})`);
+    console.log(`  → Prompt: "${prompt.substring(0, 80)}..."`);
+
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: this.slug });
+
+    const result = await model.generateContent([prompt]);
+    const response = result.response;
+
+    // Get the image part from the response
+    const imagePart = response.candidates?.[0]?.content?.parts?.find(
+      (part: any) => part.inlineData
+    );
+
+    if (!imagePart?.inlineData?.data) {
+      console.error(`  ✗ No image data in response from ${this.slug}`);
+      throw new Error(`No image data returned from ${this.slug}`);
+    }
+
+    const imageB64 = imagePart.inlineData.data;
+    console.log(`  → Received ${imageB64.length} bytes of image data`);
+
+    return {
+      imageB64,
+      metadata: {
+        mimeType: imagePart.inlineData.mimeType,
+        usage: response.usageMetadata,
+      },
+    };
+  }
+}
+
 // Brush registry - maps slug to brush instance
 export const BRUSH_REGISTRY: Record<string, Brush> = {
+  "gemini-2.5-flash-image": new NanoBananaBrush(),
   "gpt-image-1": new GPTImage1Brush(),
-  "dall-e-2": new DallE2Brush(),
-  "dall-e-3": new DallE3Brush(),
 };
 
 // Get brush by slug

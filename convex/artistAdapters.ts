@@ -52,11 +52,10 @@ export function estimateOpenAICost(
   usage: { prompt_tokens: number; completion_tokens: number }
 ): number {
   const prices: Record<string, { input: number; output: number }> = {
-    "gpt-4o-mini": { input: 0.15 / 1_000_000, output: 0.6 / 1_000_000 },
-    "gpt-4o": { input: 2.5 / 1_000_000, output: 10 / 1_000_000 },
+    "gpt-5-mini": { input: 1.25 / 1_000_000, output: 10 / 1_000_000 },
   };
 
-  const price = prices[model] || prices["gpt-4o-mini"];
+  const price = prices[model] || prices["gpt-5-mini"];
   return (
     usage.prompt_tokens * price.input + usage.completion_tokens * price.output
   );
@@ -115,13 +114,13 @@ export function estimateAnthropicCost(
   usage: { input_tokens: number; output_tokens: number }
 ): number {
   const prices: Record<string, { input: number; output: number }> = {
-    "claude-3-5-sonnet-20241022": {
+    "claude-sonnet-4-5": {
       input: 3.0 / 1_000_000,
       output: 15.0 / 1_000_000,
     },
   };
 
-  const price = prices[model] || prices["claude-3-5-sonnet-20241022"];
+  const price = prices[model] || prices["claude-sonnet-4-5"];
   return usage.input_tokens * price.input + usage.output_tokens * price.output;
 }
 
@@ -223,15 +222,14 @@ export class GoogleArtist extends ArtistAdapter {
  * Artist registry - maps slug to adapter instance
  */
 export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = {
-  "gpt-4o-mini": new OpenAIArtist("gpt-4o-mini", "GPT-4o Mini"),
-  "gpt-4o": new OpenAIArtist("gpt-4o", "GPT-4o"),
-  "claude-3-5-sonnet-20241022": new AnthropicArtist(
-    "claude-3-5-sonnet-20241022",
-    "Claude 3.5 Sonnet"
+  "gpt-5-mini": new OpenAIArtist("gpt-5-mini", "GPT-5 Mini"),
+  "claude-sonnet-4-5": new AnthropicArtist(
+    "claude-sonnet-4-5",
+    "Claude Sonnet 4.5"
   ),
-  "gemini-2.0-flash-exp": new GoogleArtist(
-    "gemini-2.0-flash-exp",
-    "Gemini 2.0 Flash"
+  "gemini-2.5-flash": new GoogleArtist(
+    "gemini-2.5-flash",
+    "Gemini 2.5 Flash"
   ),
 };
 

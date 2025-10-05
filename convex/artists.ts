@@ -6,19 +6,19 @@ export interface ArtistConfig {
 
 export const ARTISTS: ArtistConfig[] = [
   {
-    slug: "gpt-4o",
+    slug: "gpt-5-mini",
     provider: "openai",
-    displayName: "GPT-4o",
+    displayName: "GPT-5 Mini",
   },
   {
-    slug: "claude-3-5-sonnet-20241022",
+    slug: "claude-sonnet-4-5",
     provider: "anthropic",
-    displayName: "Claude 3.5 Sonnet",
+    displayName: "Claude Sonnet 4.5",
   },
   {
-    slug: "gemini-2.0-flash-exp",
+    slug: "gemini-2.5-flash",
     provider: "google",
-    displayName: "Gemini 2.0 Flash",
+    displayName: "Gemini 2.5 Flash",
   },
 ];
 
@@ -30,21 +30,15 @@ export interface BrushConfig {
 
 export const BRUSHES: BrushConfig[] = [
   {
+    slug: "gemini-2.5-flash-image",
+    provider: "google",
+    displayName: "Nano Banana 2.5",
+  },
+  {
     slug: "gpt-image-1",
     provider: "openai",
     displayName: "GPT Image 1",
   },
-  {
-    slug: "dall-e-2",
-    provider: "openai",
-    displayName: "DALL-E 2",
-  },
-  {
-    slug: "dall-e-3",
-    provider: "openai",
-    displayName: "DALL-E 3",
-  },
-  // Phase 2 will add: stable-diffusion, etc.
 ];
 
 // For Phase 1, use first artist and first brush
