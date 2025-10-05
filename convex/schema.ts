@@ -68,4 +68,57 @@ export default defineSchema({
   })
     .index("by_run", ["runId"])
     .index("by_artist", ["artistSlug"]),
+
+  // Statistical analysis results
+  model_statistics: defineTable({
+    artistSlug: v.string(),
+    metric: v.string(), // e.g., "valence", "temperature", "impossibilityScore"
+    runGroupId: v.optional(v.string()), // Optional filtering by run group
+    n: v.number(), // Sample size
+    mean: v.number(),
+    stdDev: v.number(),
+    median: v.number(),
+    q1: v.number(), // 25th percentile
+    q3: v.number(), // 75th percentile
+    min: v.number(),
+    max: v.number(),
+    ci95Lower: v.number(), // 95% confidence interval lower bound
+    ci95Upper: v.number(), // 95% confidence interval upper bound
+    createdAt: v.number(),
+  })
+    .index("by_artist_metric", ["artistSlug", "metric"])
+    .index("by_metric", ["metric"]),
+
+  statistical_comparisons: defineTable({
+    metric: v.string(), // Which metric is being compared
+    artist1: v.string(),
+    artist2: v.string(),
+    runGroupId: v.optional(v.string()), // Optional filtering by run group
+    n1: v.number(), // Sample size for artist1
+    n2: v.number(), // Sample size for artist2
+    mean1: v.number(),
+    mean2: v.number(),
+    meanDiff: v.number(), // mean1 - mean2
+    tStatistic: v.number(),
+    pValue: v.number(),
+    degreesOfFreedom: v.number(),
+    cohensD: v.number(), // Effect size
+    significant: v.boolean(), // pValue < 0.05 after correction
+    createdAt: v.number(),
+  })
+    .index("by_metric", ["metric"])
+    .index("by_artists", ["artist1", "artist2"])
+    .index("by_significance", ["metric", "significant"]),
+
+  anova_results: defineTable({
+    metric: v.string(), // Which metric was tested
+    runGroupId: v.optional(v.string()), // Optional filtering by run group
+    fStatistic: v.number(),
+    pValue: v.number(),
+    dfBetween: v.number(), // Degrees of freedom between groups
+    dfWithin: v.number(), // Degrees of freedom within groups
+    etaSquared: v.number(), // Effect size (proportion of variance explained)
+    significant: v.boolean(), // pValue < 0.05
+    createdAt: v.number(),
+  }).index("by_metric", ["metric"]),
 });
