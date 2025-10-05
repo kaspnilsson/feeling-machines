@@ -100,7 +100,7 @@ function getTValue(df: number, _alpha: number): number {
     .map(Number)
     .sort((a, b) => a - b);
   const lower = keys.filter((k) => k < df).pop() || 1;
-  const upper = keys.filter((k) => k > df)[0] || 30;
+  const _upper = keys.filter((k) => k > df)[0] || 30;
   return tTable[lower]; // Conservative estimate
 }
 
