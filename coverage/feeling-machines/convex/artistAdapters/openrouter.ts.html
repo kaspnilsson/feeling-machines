@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/69</span>
+                <span class='fraction'>0/76</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/69</span>
+                <span class='fraction'>0/76</span>
             </div>
         
             
@@ -172,7 +172,14 @@
 <a name='L107'></a><a href='#L107'>107</a>
 <a name='L108'></a><a href='#L108'>108</a>
 <a name='L109'></a><a href='#L109'>109</a>
-<a name='L110'></a><a href='#L110'>110</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -232,20 +239,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -254,8 +253,23 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -339,6 +353,7 @@ export interface OpenRouterConfig {
 <span class="cstat-no" title="statement not covered" >          { role: "user", content: userPrompt },</span>
 <span class="cstat-no" title="statement not covered" >        ],</span>
 <span class="cstat-no" title="statement not covered" >        temperature: 1.0,</span>
+<span class="cstat-no" title="statement not covered" >        response_format: { type: "json_object" },</span>
 <span class="cstat-no" title="statement not covered" >      }),</span>
 <span class="cstat-no" title="statement not covered" >    });</span>
 &nbsp;
@@ -355,18 +370,24 @@ export interface OpenRouterConfig {
 <span class="cstat-no" title="statement not covered" >      throw new Error("No content in OpenRouter response");</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-    // Parse the artist statement and image prompt using the expected format
-<span class="cstat-no" title="statement not covered" >    const statementMatch = content.match(/===ARTIST STATEMENT===([\s\S]*?)===FINAL IMAGE PROMPT===/i);</span>
-<span class="cstat-no" title="statement not covered" >    const promptMatch = content.match(/===FINAL IMAGE PROMPT===([\s\S]*)$/i);</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    if (!statementMatch || !promptMatch) {</span>
+    // Parse JSON response
+<span class="cstat-no" title="statement not covered" >    let parsedResponse: { statement?: string; imagePrompt?: string };</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      parsedResponse = JSON.parse(content);</span>
+<span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >      throw new Error(</span>
-<span class="cstat-no" title="statement not covered" >        `Invalid response format from ${this.config.model}. Expected ===ARTIST STATEMENT=== and ===FINAL IMAGE PROMPT=== sections.`</span>
+<span class="cstat-no" title="statement not covered" >        `Invalid JSON response from ${this.config.model}: ${error instanceof Error ? error.message : String(error)}`</span>
 <span class="cstat-no" title="statement not covered" >      );</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    const statement = statementMatch[1].trim();</span>
-<span class="cstat-no" title="statement not covered" >    const imagePrompt = promptMatch[1].trim();</span>
+<span class="cstat-no" title="statement not covered" >    const statement = parsedResponse.statement?.trim();</span>
+<span class="cstat-no" title="statement not covered" >    const imagePrompt = parsedResponse.imagePrompt?.trim();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (!statement || !imagePrompt) {</span>
+<span class="cstat-no" title="statement not covered" >      throw new Error(</span>
+<span class="cstat-no" title="statement not covered" >        `Missing required fields in JSON response from ${this.config.model}. Expected "statement" and "imagePrompt" fields.`</span>
+<span class="cstat-no" title="statement not covered" >      );</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
     // Get token usage
 <span class="cstat-no" title="statement not covered" >    const usage = data.usage || {};</span>
@@ -397,7 +418,7 @@ export interface OpenRouterConfig {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-05T07:27:32.108Z
+                at 2025-10-05T18:36:56.225Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -15,6 +15,10 @@ import {
   V5_PAINT_YOUR_FEELINGS,
   V6_YOUR_ESSENCE,
 } from "./prompts";
+import { rateLimit, getBackoffDelay } from "./rateLimiter";
+import { Logger, monitor, logAPICall } from "../utils/logger";
+
+const logger = new Logger("generateBatch");
 
 // Map prompt version strings to actual prompt content
 const PROMPT_MAP: Record<string, string> = {
@@ -125,13 +129,14 @@ export const enqueueRunGroup = mutation(
  */
 export const processSingleRun = internalAction(
   async ({ runMutation, runAction }, { runId }: { runId: Id<"runs"> }) => {
-    console.log(`[ProcessRun] Starting run ${runId}`);
+    const perfMonitor = monitor(`run.${runId}`);
+    logger.info(`Starting run`, { runId });
 
     // Get run details
     const run = await runMutation(internal.generateBatch.getRun, { runId });
 
     if (!run) {
-      console.error(`[ProcessRun] ✗ Run ${runId} not found`);
+      logger.error(`Run not found`, undefined, { runId });
       return;
     }
 
@@ -155,40 +160,101 @@ export const processSingleRun = internalAction(
       const MAX_BRUSH_RETRIES = 3;
 
       try {
-        // 1️⃣ Artist imagines
+        // 1️⃣ Artist imagines (with rate limiting)
         const userPrompt = PROMPT_MAP[run.promptVersion] || V2_NEUTRAL;
-        console.log(`[ProcessRun] Calling artist ${run.artistSlug} with ${run.promptVersion}...`);
+        logger.info(`Calling artist`, {
+          artist: run.artistSlug,
+          promptVersion: run.promptVersion,
+        });
+
+        // Apply rate limiting for OpenRouter API calls
+        await rateLimit("openrouter");
+
+        const artistStart = Date.now();
         artistResponse = await artistAdapter.generateArtistResponse(
           SYSTEM_PROMPT,
           userPrompt
         );
-        console.log(
-          `[ProcessRun] ✓ Artist complete in ${artistResponse.metadata.latencyMs}ms`
-        );
+        const artistDuration = Date.now() - artistStart;
+
+        logger.info(`Artist complete`, {
+          artist: run.artistSlug,
+          durationMs: artistDuration,
+          tokens: artistResponse.metadata.tokens,
+          cost: artistResponse.metadata.costEstimate,
+        });
+
+        // Log API metrics
+        logAPICall({
+          provider: "openrouter",
+          operation: "generateArtistResponse",
+          duration: artistDuration,
+          cost: artistResponse.metadata.costEstimate,
+          tokens: artistResponse.metadata.tokens,
+          status: "success",
+        });
 
         // 2️⃣ Brush paints (with retry logic)
         let lastError: Error | null = null;
 
         for (let attempt = 1; attempt <= MAX_BRUSH_RETRIES; attempt++) {
           try {
-            console.log(`[ProcessRun] Calling brush ${run.brushSlug}... (attempt ${attempt}/${MAX_BRUSH_RETRIES})`);
+            logger.info(`Calling brush`, {
+              brush: run.brushSlug,
+              attempt,
+              maxRetries: MAX_BRUSH_RETRIES,
+            });
+
+            // Apply rate limiting for brush API calls
+            const brushProvider = brush.provider; // 'openai' or 'google'
+            await rateLimit(brushProvider);
+
             const startBrush = Date.now();
             brushResult = await brush.generate(artistResponse.imagePrompt);
             brushLatency = Date.now() - startBrush;
-            console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
+
+            logger.info(`Brush complete`, {
+              brush: run.brushSlug,
+              durationMs: brushLatency,
+              attempt,
+            });
+
+            logAPICall({
+              provider: brushProvider,
+              operation: "generateImage",
+              duration: brushLatency,
+              status: "success",
+            });
+
             break; // Success, exit retry loop
           } catch (error) {
             lastError = error instanceof Error ? error : new Error(String(error));
-            console.error(`[ProcessRun] ✗ Brush attempt ${attempt} failed:`, lastError.message);
+            logger.error(`Brush attempt failed`, lastError, {
+              brush: run.brushSlug,
+              attempt,
+              maxRetries: MAX_BRUSH_RETRIES,
+            });
+
+            logAPICall({
+              provider: brush.provider,
+              operation: "generateImage",
+              duration: 0,
+              status: "error",
+              errorType: lastError.name,
+            });
 
             if (attempt === MAX_BRUSH_RETRIES) {
               // All retries exhausted
               throw lastError;
             }
 
-            // Wait before retrying (exponential backoff: 1s, 2s, 4s...)
-            const delayMs = Math.pow(2, attempt - 1) * 1000;
-            console.log(`[ProcessRun] Retrying in ${delayMs}ms...`);
+            // Wait before retrying (exponential backoff with jitter)
+            const delayMs = getBackoffDelay(attempt);
+            logger.info(`Retrying after backoff`, {
+              delayMs,
+              attempt,
+              nextAttempt: attempt + 1,
+            });
             await new Promise(resolve => setTimeout(resolve, delayMs));
           }
         }
@@ -266,9 +332,19 @@ export const processSingleRun = internalAction(
         },
       });
 
-      console.log(
-        `[ProcessRun] ✓ Run ${runId} complete! Total: ${artistResponse.metadata.latencyMs + brushLatency}ms`
-      );
+      const totalDuration = perfMonitor.end({
+        runId,
+        artistSlug: run.artistSlug,
+        brushSlug: run.brushSlug,
+        status: "done",
+      });
+
+      logger.info(`Run complete`, {
+        runId,
+        totalDurationMs: totalDuration,
+        artistDurationMs: artistResponse.metadata.latencyMs,
+        brushDurationMs: brushLatency,
+      });
 
       // 5️⃣ Schedule analysis (runs in Node.js environment, non-blocking)
       await runAction(internal.runAnalysis.analyzeRun, {
@@ -278,9 +354,10 @@ export const processSingleRun = internalAction(
         imageUrl,
       });
     } catch (error) {
-      console.error(
-        `[ProcessRun] ✗ Run ${runId} failed:`,
-        error instanceof Error ? error.message : String(error)
+      logger.error(
+        `Run failed`,
+        error instanceof Error ? error : new Error(String(error)),
+        { runId, artistSlug: run.artistSlug }
       );
 
       // Update run with error details, preserving any artist/prompt data we got

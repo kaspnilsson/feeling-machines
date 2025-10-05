@@ -2,13 +2,25 @@
 
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
-import { BarChart3, Heart, Sparkles, TrendingUp, FlaskConical } from "lucide-react";
+import {
+  BarChart3,
+  Heart,
+  Sparkles,
+  TrendingUp,
+  FlaskConical,
+  Info,
+  Lightbulb,
+  Palette,
+  Compass,
+  Ruler,
+} from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { PageShell } from "@/components/layout/page-shell";
 import { SectionHeading } from "@/components/patterns/section-heading";
 import { MetricCard } from "@/components/patterns/metric-card";
 import { InsightBadge } from "@/components/patterns/insight-badge";
+import { InsightCallout } from "@/components/patterns/insight-callout";
 import {
   PageDescription,
   PageHeader,
@@ -16,6 +28,7 @@ import {
 } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -132,6 +145,26 @@ export default function InsightsPage() {
     };
   }, [hasData, sentimentComparison]);
 
+  const valenceInsights = useMemo(() => {
+    if (!valenceStats || valenceStats.length === 0) return null;
+
+    const ordered = [...valenceStats].sort((a, b) => b.mean - a.mean);
+    const top = ordered[0];
+    const tail = ordered[ordered.length - 1];
+    const spread = top && tail ? top.mean - tail.mean : 0;
+    const mostConsistent = ordered.reduce((acc, curr) =>
+      acc.stdDev <= curr.stdDev ? acc : curr
+    );
+
+    return {
+      ordered,
+      top,
+      tail,
+      spread,
+      mostConsistent,
+    };
+  }, [valenceStats]);
+
   return (
     <main className="pb-24 pt-16">
       <PageShell className="space-y-14">
@@ -158,12 +191,13 @@ export default function InsightsPage() {
           <LoadingState />
         ) : hasData && summary ? (
           <>
-            <section className="space-y-6">
+            <section className="space-y-8">
               <SectionHeading
+                align="center"
                 title="Overview"
-                description="High-level readout across all analysed runs."
+                description="A living census of model mood, energy, and abstraction across every analysed run."
               />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 <MetricCard
                   icon={<BarChart3 className="h-5 w-5" />}
                   label="Runs processed"
@@ -189,14 +223,91 @@ export default function InsightsPage() {
               </div>
             </section>
 
+            {valenceInsights && (
+              <section className="space-y-6">
+                <SectionHeading
+                  align="center"
+                  title="Key findings"
+                  description="Where the models diverge most – and how to read those differences."
+                />
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <InsightCallout
+                    title="Mood leaders"
+                    tone="accent"
+                    icon={<Lightbulb className="h-5 w-5" />}
+                    description="Highest average valence across all analysed runs."
+                    points={valenceInsights.ordered.slice(0, 3).map((artist, index) => (
+                      <span key={artist.artistSlug}>
+                        <span className="font-semibold text-foreground">
+                          {index + 1}. {artist.artistSlug}
+                        </span>
+                        <span className="ml-2 text-muted-foreground">
+                          {formatValence(artist.mean)} · n={artist.n}
+                        </span>
+                      </span>
+                    ))}
+                    footer="Use these for uplifting, optimistic briefs."
+                  />
+                  {valenceInsights.tail && (
+                    <InsightCallout
+                      title="Spread + contrast"
+                      icon={<Ruler className="h-5 w-5" />}
+                      description="Difference between the warmest and most somber Artist."
+                      points={[
+                        <span key="spread">
+                          <span className="font-semibold text-foreground">
+                            Δ mood:
+                          </span>{" "}
+                          {formatValence(valenceInsights.spread)} between {" "}
+                          <span className="font-medium text-foreground">
+                            {valenceInsights.top.artistSlug}
+                          </span>{" "}
+                          and {" "}
+                          <span className="font-medium text-foreground">
+                            {valenceInsights.tail.artistSlug}
+                          </span>
+                        </span>,
+                        <span key="tone">
+                          <span className="font-semibold text-foreground">
+                            Somber anchor:
+                          </span>{" "}
+                          {valenceInsights.tail.artistSlug} averages {formatValence(
+                            valenceInsights.tail.mean
+                          )}
+                        </span>,
+                      ]}
+                      footer="Pair opposites in the comparison viewer to feel the full emotional swing."
+                    />
+                  )}
+                  <InsightCallout
+                    title="Most reliable voice"
+                    icon={<Compass className="h-5 w-5" />}
+                    description="Smallest standard deviation on valence (most consistent emotional tone)."
+                    points={[
+                      <span key="consistent">
+                        <span className="font-semibold text-foreground">
+                          {valenceInsights.mostConsistent.artistSlug}
+                        </span>{" "}
+                        stays within ±{valenceInsights.mostConsistent.stdDev
+                          .toFixed(2)}
+                        , even across {valenceInsights.mostConsistent.n} runs.
+                      </span>,
+                      "Expect steady mood — great for baseline prompts.",
+                    ]}
+                    footer="High variance? Increase batch size or lock temperature before trusting the trend."
+                  />
+                </div>
+              </section>
+            )}
+
             {hasStatisticalData && (
               <>
                 <Separator className="border-border/70" />
 
-                <section className="space-y-6">
+                <section className="space-y-8">
                   <SectionHeading
-                    title="Statistical Rigor"
-                    description="Confidence intervals, significance testing, and effect sizes with plain-language explanations."
+                    title="Statistical rigor"
+                    description="Confidence intervals, significance testing, and effect sizes with plain-language notes."
                     actions={
                       <Badge variant="outline" className="gap-1.5">
                         <FlaskConical className="h-3 w-3" />
@@ -205,11 +316,11 @@ export default function InsightsPage() {
                     }
                   />
 
-                  <div className="space-y-4">
-                    <Card>
+                  <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                    <Card className="shadow-sm">
                       <CardHeader>
                         <CardTitle className="text-base flex items-center justify-between">
-                          <span>Valence — Statistical Summary</span>
+                          <span>Valence — Statistical summary</span>
                           {valenceANOVA && (
                             <Badge
                               variant={
@@ -225,47 +336,21 @@ export default function InsightsPage() {
                       </CardHeader>
                       <CardContent className="space-y-6">
                         {valenceANOVA && (
-                          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-2">
-                            <h4 className="text-sm font-semibold">
-                              ANOVA Results (One-way test)
-                            </h4>
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">
-                                  F-statistic:
-                                </span>{" "}
-                                <span className="font-medium">
-                                  {valenceANOVA.fStatistic.toFixed(3)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">
-                                  p-value:
-                                </span>{" "}
-                                <span className="font-medium">
-                                  {valenceANOVA.pValue.toFixed(4)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">
-                                  η² (effect):
-                                </span>{" "}
-                                <span className="font-medium">
-                                  {valenceANOVA.etaSquared.toFixed(3)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">df:</span>{" "}
-                                <span className="font-medium">
-                                  {valenceANOVA.dfBetween}, {valenceANOVA.dfWithin}
-                                </span>
-                              </div>
+                              <MetricStat label="F-statistic" value={valenceANOVA.fStatistic.toFixed(3)} />
+                              <MetricStat label="p-value" value={valenceANOVA.pValue.toFixed(4)} />
+                              <MetricStat label="η² (effect)" value={valenceANOVA.etaSquared.toFixed(3)} />
+                              <MetricStat label="df" value={`${valenceANOVA.dfBetween}, ${valenceANOVA.dfWithin}`} />
                             </div>
-                            <p className="text-xs text-muted-foreground italic">
-                              {valenceANOVA.significant
-                                ? "✓ Models differ significantly on valence (p < 0.05). See pairwise comparisons below."
-                                : "Models do not differ significantly on valence (p ≥ 0.05)."}
-                            </p>
+                            <Alert variant="default" className="border-border/60 bg-background/70">
+                              <AlertTitle className="text-sm font-semibold">How to read this</AlertTitle>
+                              <AlertDescription className="text-xs text-muted-foreground">
+                                {valenceANOVA.significant
+                                  ? "✓ At least one model's mean valence differs beyond random chance. Use the pairwise matrix below to see which pairs diverge."
+                                  : "No statistically reliable mood difference detected yet. Add more runs or widen prompts before drawing conclusions."}
+                              </AlertDescription>
+                            </Alert>
                           </div>
                         )}
 
@@ -304,7 +389,7 @@ export default function InsightsPage() {
                           />
                         )}
 
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                           {valenceStats?.map((stats) => (
                             <DescriptiveStatsCard
                               key={stats.artistSlug}
@@ -324,18 +409,26 @@ export default function InsightsPage() {
                       </CardContent>
                     </Card>
 
-                    <p className="text-xs text-muted-foreground">
-                      📊 Statistical analysis computed per-batch using{" "}
-                      <code className="rounded bg-muted px-1 py-0.5">
-                        compute-descriptive-stats.ts
-                      </code>{" "}
-                      and{" "}
-                      <code className="rounded bg-muted px-1 py-0.5">
-                        run-statistical-tests.ts
-                      </code>
-                      . Benjamini-Hochberg correction applied to control false
-                      discovery rate.
-                    </p>
+                    <div className="space-y-4">
+                      <InsightCallout
+                        tone="muted"
+                        icon={<Info className="h-5 w-5" />}
+                        title="Quick interpretation guide"
+                        points={["Error bars that do not overlap → real difference.", "Wide intervals → add iterations before trusting ranking.", "Use the matrix to prioritise A/B tests on pairs flagged ✓ significant."]}
+                        footer="All stats are scoped per run group to avoid cross-batch noise."
+                      />
+                      <InsightCallout
+                        tone="default"
+                        icon={<FlaskConical className="h-5 w-5" />}
+                        title="Reproduce this view"
+                        description={
+                          <span>
+                            Run <code className="rounded bg-muted px-1 py-0.5">npx tsx scripts/compute-descriptive-stats.ts &lt;runGroupId&gt;</code>{" "}
+                            then <code className="rounded bg-muted px-1 py-0.5">npx tsx scripts/run-statistical-tests.ts &lt;runGroupId&gt;</code>.
+                          </span>
+                        }
+                      />
+                    </div>
                   </div>
                 </section>
               </>
@@ -346,8 +439,14 @@ export default function InsightsPage() {
             <section className="space-y-6">
               <SectionHeading
                 title="Sentiment atlas"
-                description="Breakdown per artist showing emotional mix, valence, arousal, and abstractness."
+                description="Per-Artist emotional fingerprint across all analysed runs."
               />
+              <Alert className="border-border/60 bg-muted/40">
+                <AlertTitle className="text-sm font-semibold">How to scan this grid</AlertTitle>
+                <AlertDescription className="text-xs text-muted-foreground">
+                  Valence gauge shows mood (negative → positive), chips highlight dominant emotions, and gauges chart arousal & abstractness. Combine with batch totals to judge stability.
+                </AlertDescription>
+              </Alert>
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {sentimentComparison.map((artist) => (
                   <Card
@@ -392,8 +491,8 @@ export default function InsightsPage() {
                 title="Color palette explorer"
                 description={
                   hasColorData
-                    ? "Dominant swatches and tonal tendencies extracted from generated images."
-                    : "Dominant swatches and tonal tendencies for each Artist — wired to integrate the color analysis pipeline as soon as data lands."
+                    ? "Dominant swatches, tonal temperature, and harmony scores extracted from generated images."
+                    : "Ready to ingest palette analysis as soon as the next batch finishes."
                 }
               />
               <div className="grid gap-4 md:grid-cols-3">
@@ -408,12 +507,16 @@ export default function InsightsPage() {
                       />
                     ))}
               </div>
-              {!hasColorData && (
-                <p className="text-xs text-muted-foreground">
-                  📊 Color analysis runs automatically on generated images. Data
-                  will appear here as batches complete.
-                </p>
-              )}
+              <InsightCallout
+                tone="muted"
+                icon={<Palette className="h-5 w-5" />}
+                title="Interpreting palette data"
+                points={[
+                  "Temperature hints at emotional framing – combine with valence for narrative alignment.",
+                  "Harmony outliers may indicate stylistic experimentation worth spotlighting.",
+                ]}
+                footer="Color analysis runs automatically once images land."
+              />
             </section>
 
             <section className="space-y-6">
@@ -421,8 +524,8 @@ export default function InsightsPage() {
                 title="Materiality signals"
                 description={
                   hasMaterialityData
-                    ? "Balance of concrete vs speculative materials across artist statements."
-                    : "Compare the balance of concrete vs speculative mediums each Artist gravitates toward."
+                    ? "Concrete vs speculative medium preferences derived from Artist statements."
+                    : "Stubbed with curated examples until the materiality job completes."
                 }
               />
               <div className="grid gap-4 md:grid-cols-3">
@@ -437,12 +540,55 @@ export default function InsightsPage() {
                       />
                     ))}
               </div>
-              {!hasMaterialityData && (
-                <p className="text-xs text-muted-foreground">
-                  📊 Materiality analysis runs automatically on artist
-                  statements. Data will appear here as batches complete.
-                </p>
-              )}
+              <InsightCallout
+                tone="muted"
+                icon={<Info className="h-5 w-5" />}
+                title="How to use materiality"
+                points={[
+                  "Concrete % is useful for brief fidelity. Speculative % reveals imaginative leaps.",
+                  "Pair Artists with contrasting materiality to emphasise world-building styles."
+                ]}
+              />
+            </section>
+
+            <Separator className="border-border/70" />
+
+            <section className="space-y-6">
+              <SectionHeading
+                align="center"
+                title="Metric glossary"
+                description="Quick definitions for the feelings lab."
+              />
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <InsightCallout
+                  tone="default"
+                  icon={<Heart className="h-5 w-5" />}
+                  title="Valence"
+                  description="Overall positivity/negativity of the statement (−1 → 1)."
+                  footer="Use to rank optimistic vs melancholic voices."
+                />
+                <InsightCallout
+                  tone="default"
+                  icon={<Sparkles className="h-5 w-5" />}
+                  title="Arousal"
+                  description="Energy level of language (0 calm → 1 electrified)."
+                  footer="Pair with valence for quadrant analysis (e.g. calm-positive)."
+                />
+                <InsightCallout
+                  tone="default"
+                  icon={<Lightbulb className="h-5 w-5" />}
+                  title="Abstractness"
+                  description="Ratio of abstract to concrete nouns. Higher = more conceptual."
+                  footer="High abstractness is great for moodboards; low suits production briefs."
+                />
+                <InsightCallout
+                  tone="default"
+                  icon={<FlaskConical className="h-5 w-5" />}
+                  title="CI (95%)"
+                  description="Range where the true mean likely lives. Narrower = more confidence."
+                  footer="Wait for overlap to shrink before publishing hard claims."
+                />
+              </div>
             </section>
           </>
         ) : (
@@ -480,6 +626,20 @@ function ValenceMeter({ value }: { value: number }) {
       </div>
     </div>
   );
+}
+
+function MetricStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1 text-sm">
+      <span className="block text-muted-foreground">{label}</span>
+      <span className="font-semibold tracking-tight text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function formatValence(value: number) {
+  const rounded = value.toFixed(2);
+  return `${value >= 0 ? "+" : ""}${rounded}`;
 }
 
 function EmotionChips({ emotions }: { emotions: Record<string, number> }) {

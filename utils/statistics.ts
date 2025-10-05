@@ -1,6 +1,9 @@
 /**
  * Statistical utility functions for Phase 3 analysis
+ * Uses jStat library for exact statistical calculations
  */
+
+import jStat from "jstat";
 
 // ============================================================================
 // Descriptive Statistics
@@ -165,36 +168,12 @@ export function welchTTest(group1: number[], group2: number[]): TTestResult {
   };
 }
 
-// Approximate p-value from t-statistic (two-tailed)
-function tTestPValue(tAbs: number, _df: number): number {
-  // Simplified approximation - for production use a proper t-distribution library
-  // This uses a normal approximation which works reasonably well for df > 30
-  // For exact p-values, use jStat or similar library
-
-  // Using error function approximation
-  const z = tAbs;
-  const pOneTailed = 0.5 * (1 - erf(z / Math.sqrt(2)));
-  return 2 * pOneTailed; // two-tailed
-}
-
-// Error function approximation
-function erf(x: number): number {
-  // Abramowitz and Stegun approximation
-  const sign = x >= 0 ? 1 : -1;
-  x = Math.abs(x);
-
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
-
-  const t = 1.0 / (1.0 + p * x);
-  const y =
-    1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-
-  return sign * y;
+// Exact p-value from t-statistic (two-tailed) using jStat
+function tTestPValue(tAbs: number, df: number): number {
+  // Use jStat for exact t-distribution CDF
+  // P(|T| > t) = 2 * P(T > t) for two-tailed test
+  const pOneTailed = 1 - jStat.studentt.cdf(tAbs, df);
+  return 2 * pOneTailed;
 }
 
 export function cohensD(group1: number[], group2: number[]): number {
@@ -259,7 +238,7 @@ export function oneWayANOVA(groups: number[][]): ANOVAResult {
   const ssTotal = ssBetween + ssWithin;
   const etaSquared = ssBetween / ssTotal;
 
-  // Approximate p-value using F-distribution
+  // Exact p-value using F-distribution from jStat
   const pValue = fTestPValue(fStatistic, dfBetween, dfWithin);
 
   return {
@@ -271,21 +250,12 @@ export function oneWayANOVA(groups: number[][]): ANOVAResult {
   };
 }
 
-// Approximate p-value from F-statistic
-function fTestPValue(f: number, _df1: number, _df2: number): number {
-  // Simplified approximation
-  // For production, use a proper F-distribution library (jStat, etc.)
-
-  if (f < 0.001) return 1; // F ~ 0 means no effect
-  if (f > 100) return 0.001; // Very large F means very significant
-
-  // Rough approximation based on critical values
-  // F(2, 6) critical values: 5.14 (0.05), 10.92 (0.01)
-  if (f < 3) return 0.5;
-  if (f < 5) return 0.1;
-  if (f < 10) return 0.05;
-  if (f < 20) return 0.01;
-  return 0.001;
+// Exact p-value from F-statistic using jStat
+function fTestPValue(f: number, df1: number, df2: number): number {
+  // Use jStat for exact F-distribution CDF
+  // P(F > f) = 1 - CDF(f)
+  if (f < 0.001) return 1; // Handle edge case
+  return 1 - jStat.centralF.cdf(f, df1, df2);
 }
 
 // ============================================================================

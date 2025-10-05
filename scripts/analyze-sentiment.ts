@@ -23,13 +23,13 @@ export interface SentimentAnalysis {
   abstractness: number; // ratio of abstract to concrete nouns
 }
 
+import { countKeywords, normalizeScores } from '../utils/text-analysis';
+
 /**
  * Extract emotion scores from text using keyword-based heuristics
  * TODO: Replace with proper sentiment model (e.g., Hugging Face API)
  */
 export function extractEmotions(text: string): EmotionScores {
-  const lowerText = text.toLowerCase();
-
   // Simple keyword-based scoring (placeholder for ML model)
   const joyKeywords = ['joy', 'happy', 'delight', 'radiant', 'luminous', 'uplifting', 'vibrant', 'celebration'];
   const sadnessKeywords = ['loss', 'melancholy', 'sadness', 'quiet', 'loss', 'sorrow', 'grief', 'forgotten'];
@@ -37,27 +37,25 @@ export function extractEmotions(text: string): EmotionScores {
   const fearKeywords = ['fear', 'terror', 'dread', 'anxiety', 'haunting', 'void', 'abyss', 'emptiness'];
   const surpriseKeywords = ['surprise', 'astonish', 'wonder', 'unexpected', 'shock', 'sudden'];
 
-  const countKeywords = (keywords: string[]) =>
-    keywords.filter(word => lowerText.includes(word)).length;
-
-  const joyCount = countKeywords(joyKeywords);
-  const sadnessCount = countKeywords(sadnessKeywords);
-  const angerCount = countKeywords(angerKeywords);
-  const fearCount = countKeywords(fearKeywords);
-  const surpriseCount = countKeywords(surpriseKeywords);
+  const joyCount = countKeywords(text, joyKeywords);
+  const sadnessCount = countKeywords(text, sadnessKeywords);
+  const angerCount = countKeywords(text, angerKeywords);
+  const fearCount = countKeywords(text, fearKeywords);
+  const surpriseCount = countKeywords(text, surpriseKeywords);
 
   const total = joyCount + sadnessCount + angerCount + fearCount + surpriseCount;
   const neutralScore = total === 0 ? 1 : Math.max(0, 1 - (total * 0.2));
 
   // Normalize scores
-  const maxScore = Math.max(joyCount, sadnessCount, angerCount, fearCount, surpriseCount, 1);
+  const rawScores = { joy: joyCount, sadness: sadnessCount, anger: angerCount, fear: fearCount, surprise: surpriseCount };
+  const normalized = normalizeScores(rawScores);
 
   return {
-    joy: joyCount / maxScore,
-    sadness: sadnessCount / maxScore,
-    anger: angerCount / maxScore,
-    fear: fearCount / maxScore,
-    surprise: surpriseCount / maxScore,
+    joy: normalized.joy,
+    sadness: normalized.sadness,
+    anger: normalized.anger,
+    fear: normalized.fear,
+    surprise: normalized.surprise,
     neutral: neutralScore,
   };
 }
@@ -66,8 +64,6 @@ export function extractEmotions(text: string): EmotionScores {
  * Calculate valence (positive/negative sentiment) from text
  */
 export function calculateValence(text: string): number {
-  const lowerText = text.toLowerCase();
-
   const positiveWords = [
     'beautiful', 'joy', 'happy', 'delight', 'radiant', 'luminous', 'uplifting',
     'vibrant', 'celebration', 'hope', 'love', 'gentle', 'tender', 'sublime'
@@ -78,8 +74,8 @@ export function calculateValence(text: string): number {
     'void', 'emptiness', 'forgotten', 'terror', 'fear', 'dark', 'harsh'
   ];
 
-  const positiveCount = positiveWords.filter(word => lowerText.includes(word)).length;
-  const negativeCount = negativeWords.filter(word => lowerText.includes(word)).length;
+  const positiveCount = countKeywords(text, positiveWords);
+  const negativeCount = countKeywords(text, negativeWords);
 
   const total = positiveCount + negativeCount;
   if (total === 0) return 0;
@@ -91,8 +87,6 @@ export function calculateValence(text: string): number {
  * Calculate arousal (calm/excited) from text
  */
 export function calculateArousal(text: string): number {
-  const lowerText = text.toLowerCase();
-
   const highArousalWords = [
     'explosive', 'violent', 'intense', 'vibrant', 'radiant', 'terror',
     'ecstatic', 'frenzied', 'wild', 'surge', 'burst'
@@ -103,8 +97,8 @@ export function calculateArousal(text: string): number {
     'meditative', 'peaceful', 'serene', 'tranquil'
   ];
 
-  const highCount = highArousalWords.filter(word => lowerText.includes(word)).length;
-  const lowCount = lowArousalWords.filter(word => lowerText.includes(word)).length;
+  const highCount = countKeywords(text, highArousalWords);
+  const lowCount = countKeywords(text, lowArousalWords);
 
   const total = highCount + lowCount;
   if (total === 0) return 0.5; // neutral arousal
@@ -116,8 +110,6 @@ export function calculateArousal(text: string): number {
  * Calculate abstractness score (abstract vs concrete language)
  */
 export function calculateAbstractness(text: string): number {
-  const lowerText = text.toLowerCase();
-
   const abstractWords = [
     'concept', 'idea', 'essence', 'consciousness', 'being', 'existence',
     'thought', 'memory', 'feeling', 'emotion', 'meaning', 'transcend',
@@ -129,8 +121,8 @@ export function calculateAbstractness(text: string): number {
     'oil', 'acrylic', 'brush', 'material', 'surface', 'object', 'wall'
   ];
 
-  const abstractCount = abstractWords.filter(word => lowerText.includes(word)).length;
-  const concreteCount = concreteWords.filter(word => lowerText.includes(word)).length;
+  const abstractCount = countKeywords(text, abstractWords);
+  const concreteCount = countKeywords(text, concreteWords);
 
   const total = abstractCount + concreteCount;
   if (total === 0) return 0.5; // neutral
@@ -138,21 +130,23 @@ export function calculateAbstractness(text: string): number {
   return abstractCount / total;
 }
 
-/**
- * Count unique words in text
- */
-function countUniqueWords(text: string): number {
-  const words = text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .split(/\s+/)
-    .filter(word => word.length > 0);
-
-  return new Set(words).size;
-}
+import { countWords, countUniqueWords } from '../utils/text-analysis';
 
 /**
  * Analyze sentiment of an Artist statement
+ *
+ * Extracts emotional tone, valence, arousal, and abstractness from text
+ * using keyword-based heuristics.
+ *
+ * @param input - Run metadata and statement text
+ * @returns Complete sentiment analysis with emotion scores and metrics
+ *
+ * @example
+ * const analysis = await analyzeSentiment({
+ *   runId: "abc123",
+ *   artistSlug: "claude-sonnet-4.5",
+ *   statement: "I feel a deep sense of joy and wonder..."
+ * });
  */
 export async function analyzeSentiment(input: {
   runId: string;
@@ -166,7 +160,7 @@ export async function analyzeSentiment(input: {
   const arousal = calculateArousal(statement);
   const abstractness = calculateAbstractness(statement);
 
-  const wordCount = statement.split(/\s+/).filter(w => w.length > 0).length;
+  const wordCount = countWords(statement);
   const uniqueWords = countUniqueWords(statement);
 
   return {

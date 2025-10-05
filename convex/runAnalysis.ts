@@ -1,15 +1,15 @@
 "use node";
 
-import { internalAction } from "./_generated/server";
+import { internalAction, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
-import { analyzeSentiment } from "../scripts/analyze-sentiment";
-import { analyzeColors } from "../scripts/analyze-colors";
-import { analyzeMateriality } from "../scripts/analyze-materiality";
+import { AnalysisPipeline, RunData } from "./analysisRunner";
+import { SentimentRunner, ColorRunner, MaterialityRunner } from "./analysisRunners";
 
 /**
  * Action to run all analysis on a completed run
  * This runs in Node.js environment to support image processing libraries
+ * Uses the unified analysis pipeline for consistency and extensibility
  */
 export const analyzeRun = internalAction(
   async (
@@ -26,68 +26,54 @@ export const analyzeRun = internalAction(
       imageUrl: string;
     }
   ) => {
-    // 1️⃣ Analyze sentiment
-    try {
-      console.log(`[AnalyzeRun] Analyzing sentiment for run ${runId}...`);
-      const sentiment = await analyzeSentiment({
-        runId,
-        artistSlug,
-        statement,
-      });
+    // Create analysis pipeline
+    const pipeline = new AnalysisPipeline();
 
-      await runMutation(internal.generateBatch.saveSentiment, {
-        runId: runId as Id<"runs">,
-        sentiment,
-      });
+    // Register all analysis runners
+    pipeline.register(new SentimentRunner());
+    pipeline.register(new ColorRunner());
+    pipeline.register(new MaterialityRunner());
 
-      console.log(`[AnalyzeRun] ✓ Sentiment analysis complete`);
-    } catch (error) {
-      console.error(
-        `[AnalyzeRun] ⚠ Sentiment analysis failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
+    // Prepare run data
+    const runData: RunData = {
+      runId: runId as Id<"runs">,
+      artistSlug,
+      artistStmt: statement,
+      imageUrl,
+    };
 
-    // 2️⃣ Analyze colors
-    try {
-      console.log(`[AnalyzeRun] Analyzing colors for run ${runId}...`);
-      const colorAnalysis = await analyzeColors({
-        runId,
-        artistSlug,
-        brushSlug: "unused", // Will be removed from the returned object
-        imageUrl,
-      });
+    // Execute all analyses in parallel
+    await runMutation(internal.runAnalysis.executeAnalysisPipeline, {
+      runData,
+    });
+  }
+);
 
-      await runMutation(internal.generateBatch.saveColorAnalysis, {
-        runId: runId as Id<"runs">,
-        colorAnalysis,
-      });
+/**
+ * Internal mutation to execute analysis pipeline
+ * Separated to allow database access within the pipeline
+ */
+export const executeAnalysisPipeline = internalMutation(
+  async ({ db }, { runData }: { runData: RunData }) => {
+    const pipeline = new AnalysisPipeline();
 
-      console.log(`[AnalyzeRun] ✓ Color analysis complete`);
-    } catch (error) {
-      console.error(
-        `[AnalyzeRun] ⚠ Color analysis failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
+    // Register all analysis runners
+    pipeline.register(new SentimentRunner());
+    pipeline.register(new ColorRunner());
+    pipeline.register(new MaterialityRunner());
 
-    // 3️⃣ Analyze materiality
-    try {
-      console.log(`[AnalyzeRun] Analyzing materiality for run ${runId}...`);
-      const materialityAnalysis = await analyzeMateriality({
-        runId,
-        artistSlug,
-        statement,
-      });
+    // Execute pipeline
+    const results = await pipeline.executeAll(runData, db);
 
-      await runMutation(internal.generateBatch.saveMaterialityAnalysis, {
-        runId: runId as Id<"runs">,
-        materialityAnalysis,
-      });
+    // Log summary
+    console.log(`[AnalysisPipeline] Complete for run ${runData.runId}:`, {
+      total: results.total,
+      successful: results.successful,
+      failed: results.failed,
+      skipped: results.skipped,
+      durationMs: results.durationMs,
+    });
 
-      console.log(`[AnalyzeRun] ✓ Materiality analysis complete`);
-    } catch (error) {
-      console.error(
-        `[AnalyzeRun] ⚠ Materiality analysis failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
+    return results;
   }
 );
