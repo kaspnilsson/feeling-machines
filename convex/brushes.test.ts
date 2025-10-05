@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   Brush,
   GPTImage1Brush,
-  DallE2Brush,
-  DallE3Brush,
+  NanoBananaBrush,
   getBrush,
   BRUSH_REGISTRY,
 } from "./brushes";
@@ -17,20 +16,12 @@ describe("Brush base class", () => {
     expect(brush.provider).toBe("openai");
   });
 
-  it("should have correct structure for DallE2Brush", () => {
-    const brush = new DallE2Brush();
+  it("should have correct structure for NanoBananaBrush", () => {
+    const brush = new NanoBananaBrush();
 
-    expect(brush.slug).toBe("dall-e-2");
-    expect(brush.displayName).toBe("DALL-E 2");
-    expect(brush.provider).toBe("openai");
-  });
-
-  it("should have correct structure for DallE3Brush", () => {
-    const brush = new DallE3Brush();
-
-    expect(brush.slug).toBe("dall-e-3");
-    expect(brush.displayName).toBe("DALL-E 3");
-    expect(brush.provider).toBe("openai");
+    expect(brush.slug).toBe("gemini-2.5-flash-image");
+    expect(brush.displayName).toBe("Nano Banana 2.5");
+    expect(brush.provider).toBe("google");
   });
 
   it("should implement Brush interface", () => {
@@ -44,8 +35,7 @@ describe("Brush base class", () => {
 describe("Brush registry", () => {
   it("should contain all expected brushes", () => {
     expect(BRUSH_REGISTRY["gpt-image-1"]).toBeInstanceOf(GPTImage1Brush);
-    expect(BRUSH_REGISTRY["dall-e-2"]).toBeInstanceOf(DallE2Brush);
-    expect(BRUSH_REGISTRY["dall-e-3"]).toBeInstanceOf(DallE3Brush);
+    expect(BRUSH_REGISTRY["gemini-2.5-flash-image"]).toBeInstanceOf(NanoBananaBrush);
   });
 
   it("should throw error for unknown brush slug", () => {

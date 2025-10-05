@@ -9,6 +9,7 @@ import { getArtist } from "@/convex/artistAdapters";
 import { getBrush } from "@/convex/brushes";
 import { SYSTEM_PROMPT, V2_NEUTRAL } from "@/convex/prompts";
 import { Id } from "@/convex/_generated/dataModel";
+import { analyzeSentiment } from "@/scripts/analyze-sentiment";
 
 /**
  * Phase 2: Enqueue a batch of runs for multiple artists
@@ -203,6 +204,28 @@ export const processSingleRun = internalAction(
       console.log(
         `[ProcessRun] ✓ Run ${runId} complete! Total: ${artistResponse.metadata.latencyMs + brushLatency}ms`
       );
+
+      // 5️⃣ Analyze sentiment (async, don't block completion)
+      try {
+        console.log(`[ProcessRun] Analyzing sentiment for run ${runId}...`);
+        const sentiment = await analyzeSentiment({
+          runId,
+          artistSlug: run.artistSlug,
+          statement: artistResponse.statement,
+        });
+
+        await runMutation(internal.generateBatch.saveSentiment, {
+          runId,
+          sentiment,
+        });
+
+        console.log(`[ProcessRun] ✓ Sentiment analysis complete`);
+      } catch (error: any) {
+        console.error(
+          `[ProcessRun] ⚠ Sentiment analysis failed (non-fatal): ${error.message}`
+        );
+        // Don't fail the run if sentiment analysis fails
+      }
     } catch (error: any) {
       console.error(`[ProcessRun] ✗ Run ${runId} failed:`, error.message);
 
@@ -303,6 +326,34 @@ export const completeRun = internalMutation(
       imageUrl,
       status: "done",
       meta,
+    });
+  }
+);
+
+/**
+ * Internal mutation to save sentiment analysis
+ */
+export const saveSentiment = internalMutation(
+  async (
+    { db },
+    {
+      runId,
+      sentiment,
+    }: {
+      runId: Id<"runs">;
+      sentiment: any;
+    }
+  ) => {
+    await db.insert("sentiment_analysis", {
+      runId,
+      artistSlug: sentiment.artistSlug,
+      emotions: sentiment.emotions,
+      valence: sentiment.valence,
+      arousal: sentiment.arousal,
+      wordCount: sentiment.wordCount,
+      uniqueWords: sentiment.uniqueWords,
+      abstractness: sentiment.abstractness,
+      createdAt: Date.now(),
     });
   }
 );

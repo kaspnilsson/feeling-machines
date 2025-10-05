@@ -16,4 +16,24 @@ export default defineSchema({
     meta: v.optional(v.any()), // { artist: {params, tokens, cost}, brush: {cost}, totalLatencyMs }
     createdAt: v.number(),
   }),
+
+  sentiment_analysis: defineTable({
+    runId: v.id("runs"), // Link to run
+    artistSlug: v.string(),
+    emotions: v.object({
+      joy: v.number(),
+      sadness: v.number(),
+      anger: v.number(),
+      fear: v.number(),
+      surprise: v.number(),
+      neutral: v.number(),
+    }),
+    valence: v.number(), // -1 to 1
+    arousal: v.number(), // 0 to 1
+    wordCount: v.number(),
+    uniqueWords: v.number(),
+    abstractness: v.number(), // 0 to 1
+    createdAt: v.number(),
+  }).index("by_run", ["runId"])
+    .index("by_artist", ["artistSlug"]),
 });

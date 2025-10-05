@@ -67,47 +67,37 @@ Test prompt
 });
 
 describe("estimateOpenAICost", () => {
-  it("should calculate cost for gpt-4o-mini correctly", () => {
-    const cost = estimateOpenAICost("gpt-4o-mini", {
+  it("should calculate cost for gpt-5-mini correctly", () => {
+    const cost = estimateOpenAICost("gpt-5-mini", {
       prompt_tokens: 1000,
       completion_tokens: 500,
     });
 
-    // (1000 * 0.15/1M) + (500 * 0.6/1M) = 0.00015 + 0.0003 = 0.00045
-    expect(cost).toBe(0.00045);
+    // (1000 * 1.25/1M) + (500 * 10/1M) = 0.00125 + 0.005 = 0.00625
+    expect(cost).toBe(0.00625);
   });
 
-  it("should calculate cost for gpt-4o correctly", () => {
-    const cost = estimateOpenAICost("gpt-4o", {
-      prompt_tokens: 1000,
-      completion_tokens: 500,
-    });
-
-    // (1000 * 2.5/1M) + (500 * 10/1M) = 0.0025 + 0.005 = 0.0075
-    expect(cost).toBe(0.0075);
-  });
-
-  it("should default to gpt-4o-mini pricing for unknown models", () => {
+  it("should default to gpt-5-mini pricing for unknown models", () => {
     const cost = estimateOpenAICost("unknown-model", {
       prompt_tokens: 1000,
       completion_tokens: 500,
     });
 
-    expect(cost).toBe(0.00045);
+    expect(cost).toBe(0.00625);
   });
 });
 
 describe("OpenAIArtist", () => {
   it("should have correct metadata", () => {
-    const artist = new OpenAIArtist("gpt-4o-mini", "GPT-4o Mini");
+    const artist = new OpenAIArtist("gpt-5-mini", "GPT-5 Mini");
 
-    expect(artist.slug).toBe("gpt-4o-mini");
-    expect(artist.displayName).toBe("GPT-4o Mini");
+    expect(artist.slug).toBe("gpt-5-mini");
+    expect(artist.displayName).toBe("GPT-5 Mini");
     expect(artist.provider).toBe("openai");
   });
 
   it("should implement ArtistAdapter interface", () => {
-    const artist = new OpenAIArtist("gpt-4o-mini", "GPT-4o Mini");
+    const artist = new OpenAIArtist("gpt-5-mini", "GPT-5 Mini");
 
     expect(artist).toBeInstanceOf(ArtistAdapter);
     expect(typeof artist.generateArtistResponse).toBe("function");
@@ -122,9 +112,9 @@ describe("ArtistAdapter registry", () => {
   });
 
   it("should return artist for valid slug", () => {
-    const artist = getArtist("gpt-4o-mini");
+    const artist = getArtist("gpt-5-mini");
 
     expect(artist).toBeInstanceOf(ArtistAdapter);
-    expect(artist.slug).toBe("gpt-4o-mini");
+    expect(artist.slug).toBe("gpt-5-mini");
   });
 });

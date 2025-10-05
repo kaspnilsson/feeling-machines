@@ -59,9 +59,8 @@ export default function Home() {
             <PageTitle>Feeling Machines</PageTitle>
             <PageDescription>
               Benchmark how different reasoning models explain an identical
-              creative brief, then see how a shared image model renders each
-              instruction. Track completion, cost, and narrative differences in
-              one place.
+              creative brief, then see how an image model renders each
+              instruction.
             </PageDescription>
             {hasRunGroups && (
               <p className="text-sm text-muted-foreground">
