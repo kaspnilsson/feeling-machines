@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
-import { BarChart3, Heart, Sparkles, TrendingUp } from "lucide-react";
+import { BarChart3, Heart, Sparkles, TrendingUp, FlaskConical } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
 import { PageShell } from "@/components/layout/page-shell";
@@ -18,6 +18,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DescriptiveStatsCard,
+} from "@/components/patterns/statistical-insight";
+import {
+  ConfidenceIntervalChart,
+  DistributionBoxPlot,
+  SignificanceMatrix,
+} from "@/components/patterns/statistical-charts";
 
 type SentimentRow = {
   artistSlug: string;
@@ -76,11 +84,24 @@ export default function InsightsPage() {
     api.materiality.compareArtistMateriality
   );
 
+  // Statistical queries (for a specific metric as example)
+  const valenceStats = useQuery(api.statistics.getStatsByMetric, {
+    metric: "valence",
+  });
+  const valenceComparisons = useQuery(
+    api.statistics.getSignificantComparisons,
+    { metric: "valence" }
+  );
+  const valenceANOVA = useQuery(api.statistics.getANOVAResults, {
+    metric: "valence",
+  });
+
   const isLoading = sentimentComparison === undefined;
   const hasData = !!sentimentComparison && sentimentComparison.length > 0;
   const hasColorData = !!colorComparison && colorComparison.length > 0;
   const hasMaterialityData =
     !!materialityComparison && materialityComparison.length > 0;
+  const hasStatisticalData = !!valenceStats && valenceStats.length > 0;
 
   const summary = useMemo(() => {
     if (!hasData) return null;
@@ -167,6 +188,158 @@ export default function InsightsPage() {
                 />
               </div>
             </section>
+
+            {hasStatisticalData && (
+              <>
+                <Separator className="border-border/70" />
+
+                <section className="space-y-6">
+                  <SectionHeading
+                    title="Statistical Rigor"
+                    description="Confidence intervals, significance testing, and effect sizes with plain-language explanations."
+                    actions={
+                      <Badge variant="outline" className="gap-1.5">
+                        <FlaskConical className="h-3 w-3" />
+                        Experimental
+                      </Badge>
+                    }
+                  />
+
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center justify-between">
+                          <span>Valence — Statistical Summary</span>
+                          {valenceANOVA && (
+                            <Badge
+                              variant={
+                                valenceANOVA.significant ? "default" : "secondary"
+                              }
+                            >
+                              {valenceANOVA.significant
+                                ? `Significant (p = ${valenceANOVA.pValue.toFixed(4)})`
+                                : "Not significant"}
+                            </Badge>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {valenceANOVA && (
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-2">
+                            <h4 className="text-sm font-semibold">
+                              ANOVA Results (One-way test)
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">
+                                  F-statistic:
+                                </span>{" "}
+                                <span className="font-medium">
+                                  {valenceANOVA.fStatistic.toFixed(3)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">
+                                  p-value:
+                                </span>{" "}
+                                <span className="font-medium">
+                                  {valenceANOVA.pValue.toFixed(4)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">
+                                  η² (effect):
+                                </span>{" "}
+                                <span className="font-medium">
+                                  {valenceANOVA.etaSquared.toFixed(3)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">df:</span>{" "}
+                                <span className="font-medium">
+                                  {valenceANOVA.dfBetween}, {valenceANOVA.dfWithin}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground italic">
+                              {valenceANOVA.significant
+                                ? "✓ Models differ significantly on valence (p < 0.05). See pairwise comparisons below."
+                                : "Models do not differ significantly on valence (p ≥ 0.05)."}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="grid gap-6 md:grid-cols-2">
+                          {valenceStats && valenceStats.length > 0 && (
+                            <ConfidenceIntervalChart
+                              data={valenceStats.map((s) => ({
+                                artistSlug: s.artistSlug,
+                                mean: s.mean,
+                                ci95Lower: s.ci95Lower,
+                                ci95Upper: s.ci95Upper,
+                              }))}
+                              metric="Valence"
+                            />
+                          )}
+
+                          {valenceStats && valenceStats.length > 0 && (
+                            <DistributionBoxPlot
+                              data={valenceStats.map((s) => ({
+                                artistSlug: s.artistSlug,
+                                min: s.min,
+                                q1: s.q1,
+                                median: s.median,
+                                q3: s.q3,
+                                max: s.max,
+                              }))}
+                              metric="Valence"
+                            />
+                          )}
+                        </div>
+
+                        {valenceComparisons && valenceComparisons.length > 0 && (
+                          <SignificanceMatrix
+                            comparisons={valenceComparisons}
+                            metric="Valence"
+                          />
+                        )}
+
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {valenceStats?.map((stats) => (
+                            <DescriptiveStatsCard
+                              key={stats.artistSlug}
+                              artistSlug={stats.artistSlug}
+                              metric="valence"
+                              n={stats.n}
+                              mean={stats.mean}
+                              stdDev={stats.stdDev}
+                              median={stats.median}
+                              q1={stats.q1}
+                              q3={stats.q3}
+                              ci95Lower={stats.ci95Lower}
+                              ci95Upper={stats.ci95Upper}
+                            />
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <p className="text-xs text-muted-foreground">
+                      📊 Statistical analysis computed per-batch using{" "}
+                      <code className="rounded bg-muted px-1 py-0.5">
+                        compute-descriptive-stats.ts
+                      </code>{" "}
+                      and{" "}
+                      <code className="rounded bg-muted px-1 py-0.5">
+                        run-statistical-tests.ts
+                      </code>
+                      . Benjamini-Hochberg correction applied to control false
+                      discovery rate.
+                    </p>
+                  </div>
+                </section>
+              </>
+            )}
 
             <Separator className="border-border/70" />
 
