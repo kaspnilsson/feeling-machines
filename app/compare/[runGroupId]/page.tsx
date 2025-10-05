@@ -168,7 +168,9 @@ function ArtworkCard({ run }: { run: any }) {
               <div className="mt-4 space-y-2 text-sm">
                 {run.artistStmt && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Artist Statement:</p>
+                    <p className="text-xs font-medium mb-1">
+                      Artist Statement:
+                    </p>
                     <p className="text-muted-foreground line-clamp-3">
                       {run.artistStmt}
                     </p>

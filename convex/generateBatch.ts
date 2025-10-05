@@ -213,13 +213,7 @@ export const getRun = internalMutation(
  * Internal mutation to update run status
  */
 export const updateRunStatus = internalMutation(
-  async (
-    { db },
-    {
-      runId,
-      status,
-    }: { runId: Id<"runs">; status: string }
-  ) => {
+  async ({ db }, { runId, status }: { runId: Id<"runs">; status: string }) => {
     await db.patch(runId, {
       status,
     });
@@ -232,10 +226,7 @@ export const updateRunStatus = internalMutation(
 export const failRun = internalMutation(
   async (
     { db },
-    {
-      runId,
-      errorMessage,
-    }: { runId: Id<"runs">; errorMessage: string }
+    { runId, errorMessage }: { runId: Id<"runs">; errorMessage: string }
   ) => {
     await db.patch(runId, {
       status: "failed",
