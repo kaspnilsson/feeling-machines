@@ -2,7 +2,7 @@
 
 **Goal:** Quantify each Artist's "aesthetic fingerprint" through data analysis and visualization.
 
-**Status:** Planning
+**Status:** In Progress - Exploratory Phase
 
 ---
 
@@ -11,7 +11,13 @@
 Phase 3 shifts from pure generation to **analytical interpretation**. We'll
 extract quantitative signals from Artist statements and rendered images to
 reveal each model's latent aesthetic biases, emotional tendencies, and visual
-preferences. Insights will surface in two places:
+preferences.
+
+**Approach:** We follow a two-phase scientific methodology:
+1. **Phase 3A (Exploratory)** - Run small batches to discover patterns and form hypotheses
+2. **Phase 3B (Validation)** - Test hypotheses with larger sample sizes and statistical rigor
+
+Insights will surface in two places:
 
 - **Gallery** – public-facing comparison reports highlight the strongest
   deltas (sentiment, palette, materiality) via `InsightBadge` and story-driven
@@ -23,15 +29,74 @@ preferences. Insights will surface in two places:
 
 ---
 
-## 🎯 Objectives
+## 🎯 Phase 3A: Exploratory Data Collection
 
-1. **Sentiment Analysis** – Extract emotional tone from Artist statements
-2. **Color Palette Extraction** – Identify dominant colors and palettes from generated images
-3. **Materiality Analysis** – Track concrete vs speculative medium choices
-4. **Cultural Reference Tracking** – Map artistic influences and traditions
-5. **Scale & Ambition Metrics** – Measure intimacy vs grandiosity
-6. **Temporal & Agency Analysis** – Examine how models position themselves as creators
-7. **Comparative Visualization** – Create interactive dashboards showing model differences
+**Goal:** Discover patterns in model behavior to form testable hypotheses.
+
+### Methodology
+
+1. **Initial Batch Collection**
+   - 5× iterations per model (for variance measurement)
+   - All configured Artists (GPT-5-mini, Claude-Sonnet-4-5, Gemini-2.5-Flash, etc.)
+   - Single Brush (Gemini-2.5-Flash-Image) to isolate Artist effects
+   - v2-neutral prompt for baseline behavior
+
+2. **Automated Analysis**
+   - Sentiment analysis on all artist statements
+   - Color palette extraction from generated images
+   - Materiality classification (concrete vs speculative)
+
+3. **Pattern Discovery**
+   - Identify clustering in emotional tone
+   - Detect color temperature preferences
+   - Measure materiality tendencies
+   - Look for unexpected correlations
+
+4. **Hypothesis Formation**
+   - Document 2-3 specific, testable hypotheses based on observed patterns
+   - Define metrics and thresholds for validation
+   - Plan targeted data collection for Phase 3B
+
+### Expected Outputs
+
+- ~30-40 total runs (5× iterations × 6-8 models)
+- Complete analysis data for sentiment, color, and materiality
+- Initial visualizations showing model clustering
+- **Documented hypotheses** for validation testing
+
+---
+
+## 🎯 Phase 3B: Hypothesis Validation
+
+**Goal:** Statistically validate hypotheses from exploratory phase.
+
+### Methodology
+
+1. **Targeted Data Collection**
+   - 20× iterations per model for statistical power
+   - Focused on metrics relevant to hypotheses
+   - Possibly varied prompts if hypotheses require it
+
+2. **Statistical Testing**
+   - ANOVA for cross-model comparisons
+   - t-tests for pairwise differences
+   - Effect size calculations (Cohen's d)
+   - Confidence intervals and p-values
+
+3. **Validation Criteria**
+   - p < 0.05 for statistical significance
+   - Effect size > 0.5 for practical significance
+   - Consistent patterns across prompt variations
+
+### Analysis Dimensions
+
+1. **Sentiment Analysis** – Emotional tone from Artist statements
+2. **Color Palette Extraction** – Dominant colors and color harmony from images
+3. **Materiality Analysis** – Concrete vs speculative medium choices
+4. ~~**Cultural Reference Tracking**~~ – Deferred to future work
+5. ~~**Scale & Ambition Metrics**~~ – Deferred to future work
+6. ~~**Temporal & Agency Analysis**~~ – Deferred to future work
+7. **Comparative Visualization** – Interactive dashboards showing model differences
 8. **Statistical Validation** – Determine if observed patterns are statistically significant
 
 ---
@@ -604,11 +669,117 @@ Build `/insights` page:
 
 ## 🏁 Success Criteria
 
-- [ ] Sentiment analysis runs on all existing statements
-- [ ] Color palettes extracted for all images
-- [ ] Statistical tests show significant differences between Artists
-- [ ] Dashboard visualizes at least 3 distinct analysis types
-- [ ] Findings document interprets results without overstating conclusions
+### Phase 3A (Exploratory)
+- [ ] Run 5× iteration batch across all configured models
+- [ ] Sentiment, color, and materiality analysis complete for all runs
+- [ ] Initial visualizations show clustering patterns
+- [ ] Document 2-3 specific hypotheses with defined metrics
+- [ ] Plan Phase 3B validation approach
+
+### Phase 3B (Validation)
+- [ ] Run 20× iteration batch focused on hypothesis testing
+- [ ] Statistical tests (ANOVA, t-tests) show significant differences
+- [ ] Effect sizes calculated for all hypotheses
+- [ ] Dashboard visualizes validated findings
+- [ ] Findings document with statistical rigor
 - [ ] Exported dataset available for external research
 
-**Definition of Done:** Publish `/insights` dashboard with actionable insights about Artist personalities.
+**Definition of Done:** Publish white paper with statistically validated hypotheses about model aesthetic biases.
+
+---
+
+## 📅 Phase 3A Execution Plan
+
+### Batch Configuration
+
+**Exploratory Batch #1**
+```json
+{
+  "promptVersion": "v2-neutral",
+  "artistSlugs": [
+    "gpt-5-mini",
+    "claude-sonnet-4-5",
+    "gemini-2.5-flash",
+    "gpt-4o-mini",
+    "gpt-4o",
+    "claude-opus-4"
+  ],
+  "brushSlug": "gemini-2.5-flash-image",
+  "iterations": 5
+}
+```
+
+**Rationale:**
+- 5× iterations provides variance measurement without excessive cost
+- Single brush isolates Artist effects from rendering differences
+- v2-neutral prompt establishes baseline behavior
+- Total: ~30 runs (6 models × 5 iterations)
+
+### Analysis Workflow
+
+1. **Launch batch via Lab Console** at `/console/batches`
+2. **Monitor progress** - runs complete in ~2-5 minutes each
+3. **Review raw data** as analysis completes automatically
+4. **Examine patterns** in Console Analytics dashboard
+5. **Export data** for deeper statistical exploration
+6. **Form hypotheses** based on observed clustering
+
+### Hypothesis Template
+
+For each observed pattern, document:
+
+```markdown
+### Hypothesis [N]: [Descriptive Name]
+
+**Observation:** [What pattern did we see in exploratory data?]
+
+**Hypothesis:** [Specific, testable claim]
+
+**Null Hypothesis:** [What we'd see if there's no effect]
+
+**Metrics:** [Exactly what we'll measure]
+
+**Validation Approach:** [How we'll test it in Phase 3B]
+
+**Expected Effect Size:** [Minimum meaningful difference]
+```
+
+### Example Hypotheses (Pre-Data Speculation)
+
+These are guesses - real hypotheses will come from actual data:
+
+**H1: Materiality Divergence**
+- Observation: Gemini uses more speculative materials in exploratory batch
+- Hypothesis: Gemini's impossibility score is significantly higher (>0.3 difference) than GPT/Claude
+- Validation: 20× batch, ANOVA across models, Cohen's d > 0.5
+
+**H2: Emotional Valence Clustering**
+- Observation: Claude shows higher positive valence in statements
+- Hypothesis: Claude's avg valence > 0.1 higher than other models
+- Validation: 20× batch, pairwise t-tests, p < 0.05
+
+**H3: Color Temperature Preference**
+- Observation: Model families cluster by warm/cool color preference
+- Hypothesis: OpenAI models skew warm (+0.2 temp), Anthropic skew cool (-0.2 temp)
+- Validation: 20× batch, ANOVA on temperature scores
+
+---
+
+## 🏁 Success Criteria (Updated)
+
+### Phase 3A (Exploratory) - Current Phase
+- [ ] Run 5× iteration batch across all configured models
+- [ ] Sentiment, color, and materiality analysis complete for all runs
+- [ ] Initial visualizations show clustering patterns
+- [ ] Document 2-3 specific hypotheses with defined metrics
+- [ ] Plan Phase 3B validation approach
+
+### Phase 3B (Validation) - Next Phase
+- [ ] Run 20× iteration batch focused on hypothesis testing
+- [ ] Statistical tests (ANOVA, t-tests) show significant differences
+- [ ] Effect sizes calculated for all hypotheses
+- [ ] Dashboard visualizes validated findings
+- [ ] Findings document with statistical rigor
+- [ ] Exported dataset available for external research
+
+**Definition of Done:** Publish white paper with statistically validated hypotheses about model aesthetic biases.
