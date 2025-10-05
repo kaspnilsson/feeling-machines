@@ -1,30 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
-import { AlertTriangle, Check, Clock3, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Clock3, Loader2, Sparkles, LayoutGrid, TableIcon } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 
 import { api } from "@/convex/_generated/api";
 import { PageShell } from "@/components/layout/page-shell";
 import { ComparisonViewer } from "@/components/patterns/comparison-viewer";
+import { ComparisonTable } from "@/components/patterns/comparison-table";
+import { ComparisonGallery } from "@/components/patterns/comparison-gallery";
 import { SectionHeading } from "@/components/patterns/section-heading";
-import { MetricCard } from "@/components/patterns/metric-card";
 import {
   PageDescription,
   PageHeader,
   PageTitle,
 } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CompareView() {
   const params = useParams();
   const runGroupId = params.runGroupId as string;
+  const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
+  const [selectedRunId, setSelectedRunId] = useState<string | undefined>();
 
   const stats = useQuery(api.analytics.getRunGroupStats, { runGroupId });
 
@@ -74,45 +77,63 @@ export default function CompareView() {
   }
 
   return (
-    <PageShell className="space-y-14 py-16">
-      <CompareHeader stats={derivedStats} runGroupId={runGroupId} />
+    <PageShell className="py-16">
+      <div className="space-y-8 mb-8">
+        <CompareHeader stats={derivedStats} runGroupId={runGroupId} />
+      </div>
 
-      <SectionHeading
-        title="Comparison report"
-        description="Select an Artist to inspect their statement, the prompt forwarded to the shared brush, and the metadata we capture for transparency."
-      />
-
-      <ComparisonViewer runs={stats.runs} />
-
-      <section className="space-y-6">
-        <Separator className="border-border/70" />
-        <SectionHeading
-          title="Batch progress"
-          description="Monitor throughput, efficiency, and outstanding work for this run group."
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            label="Completed"
-            value={`${derivedStats.completed}/${derivedStats.total}`}
-            helper="Model outputs finished"
-          />
-          <MetricCard
-            label="Average latency"
-            value={`${(derivedStats.avgLatency / 1000).toFixed(1)}s`}
-            helper="Prompt → image"
-          />
-          <MetricCard
-            label="Total cost"
-            value={`$${derivedStats.totalCost.toFixed(6)}`}
-            helper="Reasoning + brush"
-          />
-          <MetricCard
-            label="Status"
-            value={`${derivedStats.generating} in flight`}
-            helper={`${derivedStats.queued} queued • ${derivedStats.failed} failed`}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Left column: Hero view (sticky on desktop) */}
+        <div className="lg:sticky lg:top-24 lg:self-start space-y-6">
+          <ComparisonViewer
+            runs={stats.runs}
+            selectedRunId={selectedRunId}
+            onRunSelect={setSelectedRunId}
           />
         </div>
-      </section>
+
+        {/* Right column: Gallery/Table (flows with page scroll) */}
+        <div className="space-y-8">
+          <section className="space-y-6">
+            <SectionHeading
+              title="All runs"
+              description="View all runs in this batch."
+              actions={
+                <div className="flex gap-2">
+                  <Button
+                    variant={viewMode === "gallery" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("gallery")}
+                  >
+                    <LayoutGrid className="h-4 w-4" /> Gallery
+                  </Button>
+                  <Button
+                    variant={viewMode === "table" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("table")}
+                  >
+                    <TableIcon className="h-4 w-4" /> Table
+                  </Button>
+                </div>
+              }
+            />
+
+            {viewMode === "gallery" ? (
+              <ComparisonGallery
+                runs={stats.runs}
+                selectedRunId={selectedRunId}
+                onRunSelect={setSelectedRunId}
+              />
+            ) : (
+              <ComparisonTable
+                runs={stats.runs}
+                selectedRunId={selectedRunId}
+                onRunSelect={setSelectedRunId}
+              />
+            )}
+          </section>
+        </div>
+      </div>
     </PageShell>
   );
 }
@@ -188,6 +209,14 @@ function CompareHeader({
               failed
             </Badge>
           )}
+          {stats.avgLatency > 0 && (
+            <Badge variant="outline">
+              Avg latency · {(stats.avgLatency / 1000).toFixed(1)}s
+            </Badge>
+          )}
+          <Badge variant="outline">
+            Total cost · ${stats.totalCost.toFixed(6)}
+          </Badge>
         </div>
       </div>
     </PageHeader>

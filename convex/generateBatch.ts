@@ -4,7 +4,7 @@ import {
   internalMutation,
 } from "./_generated/server";
 import { internal, api } from "./_generated/api";
-import { ARTISTS, BRUSHES } from "./artists";
+import { ARTISTS } from "./artists";
 import { getArtist } from "./artistAdapters";
 import { getBrush } from "./brushes";
 import { SYSTEM_PROMPT, V2_NEUTRAL } from "./prompts";
@@ -45,7 +45,9 @@ export const enqueueRunGroup = mutation(
     const selectedArtists = ARTISTS.filter((a) => artistSlugs.includes(a.slug));
 
     if (selectedArtists.length === 0) {
-      throw new Error(`No valid artists found for slugs: ${artistSlugs.join(", ")}`);
+      throw new Error(
+        `No valid artists found for slugs: ${artistSlugs.join(", ")}`
+      );
     }
 
     const brush = { slug: brushSlug };
@@ -78,7 +80,9 @@ export const enqueueRunGroup = mutation(
 
         runIds.push(runId);
 
-        console.log(`  → Queued run ${runId} for ${artist.slug} + ${brush.slug} (iteration ${i + 1}/${iterations})`);
+        console.log(
+          `  → Queued run ${runId} for ${artist.slug} + ${brush.slug} (iteration ${i + 1}/${iterations})`
+        );
 
         // Schedule background action to process this run
         await scheduler.runAfter(0, internal.generateBatch.processSingleRun, {
@@ -132,6 +136,7 @@ export const processSingleRun = internalAction(
       let artistResponse;
       let brushResult;
       let brushLatency = 0;
+      const MAX_BRUSH_RETRIES = 3;
 
       try {
         // 1️⃣ Artist imagines
@@ -144,20 +149,45 @@ export const processSingleRun = internalAction(
           `[ProcessRun] ✓ Artist complete in ${artistResponse.metadata.latencyMs}ms`
         );
 
-        // 2️⃣ Brush paints
-        console.log(`[ProcessRun] Calling brush ${run.brushSlug}...`);
-        const startBrush = Date.now();
-        brushResult = await brush.generate(artistResponse.imagePrompt);
-        brushLatency = Date.now() - startBrush;
-        console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
+        // 2️⃣ Brush paints (with retry logic)
+        let lastError: Error | null = null;
+
+        for (let attempt = 1; attempt <= MAX_BRUSH_RETRIES; attempt++) {
+          try {
+            console.log(`[ProcessRun] Calling brush ${run.brushSlug}... (attempt ${attempt}/${MAX_BRUSH_RETRIES})`);
+            const startBrush = Date.now();
+            brushResult = await brush.generate(artistResponse.imagePrompt);
+            brushLatency = Date.now() - startBrush;
+            console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
+            break; // Success, exit retry loop
+          } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            console.error(`[ProcessRun] ✗ Brush attempt ${attempt} failed:`, lastError.message);
+
+            if (attempt === MAX_BRUSH_RETRIES) {
+              // All retries exhausted
+              throw lastError;
+            }
+
+            // Wait before retrying (exponential backoff: 1s, 2s, 4s...)
+            const delayMs = Math.pow(2, attempt - 1) * 1000;
+            console.log(`[ProcessRun] Retrying in ${delayMs}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          }
+        }
+
+        if (!brushResult) {
+          throw lastError || new Error("Brush generation failed with no result");
+        }
       } catch (error) {
+        console.error(`[ProcessRun] ✗ Generation failed:`, error);
         // If artist succeeded but brush failed, save the artist data
         if (artistResponse) {
           await runMutation(internal.generateBatch.failRunWithArtistData, {
             runId,
             artistStmt: artistResponse.statement,
             imagePrompt: artistResponse.imagePrompt,
-            errorMessage: `Image generation failed: ${error instanceof Error ? error.message : String(error)}`,
+            errorMessage: `Image generation failed after ${MAX_BRUSH_RETRIES} attempts: ${error instanceof Error ? error.message : String(error)}`,
           });
           return;
         }
@@ -231,12 +261,18 @@ export const processSingleRun = internalAction(
         imageUrl,
       });
     } catch (error) {
-      console.error(`[ProcessRun] ✗ Run ${runId} failed:`, error instanceof Error ? error.message : String(error));
+      console.error(
+        `[ProcessRun] ✗ Run ${runId} failed:`,
+        error instanceof Error ? error.message : String(error)
+      );
 
       // Update run with error details, preserving any artist/prompt data we got
       await runMutation(internal.generateBatch.failRun, {
         runId,
-        errorMessage: error instanceof Error ? error.message : String(error) || "Unknown error occurred",
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Unknown error occurred",
       });
     }
   }

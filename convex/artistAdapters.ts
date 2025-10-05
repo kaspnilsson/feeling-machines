@@ -1,6 +1,3 @@
-import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { OpenRouterArtist } from "./artistAdapters/openrouter";
 
 export interface ArtistResponse {
@@ -18,8 +15,7 @@ export interface ArtistResponse {
 export abstract class ArtistAdapter {
   constructor(
     public readonly slug: string,
-    public readonly displayName: string,
-    public readonly provider: string
+    public readonly displayName: string
   ) {}
 
   abstract generateArtistResponse(
@@ -29,207 +25,13 @@ export abstract class ArtistAdapter {
 }
 
 /**
- * Parse artist output to extract statement and image prompt
- */
-export function parseArtistOutput(fullText: string): {
-  statement: string;
-  imagePrompt: string;
-} {
-  const statementMatch =
-    /===ARTIST STATEMENT===([\s\S]*?)===FINAL IMAGE PROMPT===/i.exec(fullText);
-  const promptMatch = /===FINAL IMAGE PROMPT===([\s\S]*)$/i.exec(fullText);
-
-  return {
-    statement: statementMatch?.[1]?.trim() ?? "",
-    imagePrompt: promptMatch?.[1]?.trim() ?? "",
-  };
-}
-
-/**
- * Estimate cost for OpenAI models based on token usage
- */
-export function estimateOpenAICost(
-  model: string,
-  usage: { prompt_tokens: number; completion_tokens: number }
-): number {
-  const prices: Record<string, { input: number; output: number }> = {
-    "gpt-5-mini": { input: 1.25 / 1_000_000, output: 10 / 1_000_000 },
-  };
-
-  const price = prices[model] || prices["gpt-5-mini"];
-  return (
-    usage.prompt_tokens * price.input + usage.completion_tokens * price.output
-  );
-}
-
-/**
- * OpenAI artist adapter
- */
-export class OpenAIArtist extends ArtistAdapter {
-  constructor(slug: string, displayName: string) {
-    super(slug, displayName, "openai");
-  }
-
-  async generateArtistResponse(
-    systemPrompt: string,
-    userPrompt: string
-  ): Promise<ArtistResponse> {
-    const startTime = Date.now();
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    const response = await openai.chat.completions.create({
-      model: this.slug,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      // Use model defaults - no temperature, top_p, etc.
-    });
-
-    const fullText = response.choices[0].message?.content ?? "";
-    const { statement, imagePrompt } = parseArtistOutput(fullText);
-
-    return {
-      fullText,
-      statement,
-      imagePrompt,
-      metadata: {
-        model: this.slug,
-        tokens: response.usage?.total_tokens ?? 0,
-        latencyMs: Date.now() - startTime,
-        costEstimate: response.usage
-          ? estimateOpenAICost(this.slug, response.usage)
-          : 0,
-      },
-    };
-  }
-}
-
-/**
- * Estimate cost for Anthropic models based on token usage
- */
-export function estimateAnthropicCost(
-  model: string,
-  usage: { input_tokens: number; output_tokens: number }
-): number {
-  const prices: Record<string, { input: number; output: number }> = {
-    "claude-sonnet-4-5": {
-      input: 3.0 / 1_000_000,
-      output: 15.0 / 1_000_000,
-    },
-  };
-
-  const price = prices[model] || prices["claude-sonnet-4-5"];
-  return usage.input_tokens * price.input + usage.output_tokens * price.output;
-}
-
-/**
- * Estimate cost for Google models (currently free/experimental)
- */
-export function estimateGoogleCost(
-  _model: string,
-  _usage: { promptTokenCount?: number; candidatesTokenCount?: number }
-): number {
-  // Gemini 2.0 Flash is currently free during experimental phase
-  return 0;
-}
-
-/**
- * Anthropic Claude artist adapter
- */
-export class AnthropicArtist extends ArtistAdapter {
-  constructor(slug: string, displayName: string) {
-    super(slug, displayName, "anthropic");
-  }
-
-  async generateArtistResponse(
-    systemPrompt: string,
-    userPrompt: string
-  ): Promise<ArtistResponse> {
-    const startTime = Date.now();
-
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    const response = await anthropic.messages.create({
-      model: this.slug,
-      max_tokens: 2000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-      // Use model defaults - no temperature or top_p
-    });
-
-    const fullText =
-      response.content[0].type === "text" ? response.content[0].text : "";
-    const { statement, imagePrompt } = parseArtistOutput(fullText);
-
-    return {
-      fullText,
-      statement,
-      imagePrompt,
-      metadata: {
-        model: this.slug,
-        tokens: response.usage.input_tokens + response.usage.output_tokens,
-        latencyMs: Date.now() - startTime,
-        costEstimate: estimateAnthropicCost(this.slug, response.usage),
-      },
-    };
-  }
-}
-
-/**
- * Google Gemini artist adapter
- */
-export class GoogleArtist extends ArtistAdapter {
-  constructor(slug: string, displayName: string) {
-    super(slug, displayName, "google");
-  }
-
-  async generateArtistResponse(
-    systemPrompt: string,
-    userPrompt: string
-  ): Promise<ArtistResponse> {
-    const startTime = Date.now();
-
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-    const model = genAI.getGenerativeModel({
-      model: this.slug,
-      systemInstruction: systemPrompt,
-      // Use model defaults - no generation config
-    });
-
-    const result = await model.generateContent(userPrompt);
-    const fullText = result.response.text();
-    const { statement, imagePrompt } = parseArtistOutput(fullText);
-
-    const usage = result.response.usageMetadata;
-
-    return {
-      fullText,
-      statement,
-      imagePrompt,
-      metadata: {
-        model: this.slug,
-        tokens: (usage?.totalTokenCount ?? 0),
-        latencyMs: Date.now() - startTime,
-        costEstimate: estimateGoogleCost(this.slug, usage || {}),
-      },
-    };
-  }
-}
-
-/**
- * OpenRouter adapter wrapper to match ArtistAdapter interface
+ * OpenRouter adapter - unified interface for all LLM providers via BYOK
  */
 export class OpenRouterAdapter extends ArtistAdapter {
   private openrouter: OpenRouterArtist;
 
   constructor(slug: string, displayName: string, openrouterModel: string) {
-    super(slug, displayName, "openrouter");
+    super(slug, displayName);
     this.openrouter = new OpenRouterArtist(
       { model: openrouterModel, displayName },
       process.env.OPENROUTER_API_KEY
@@ -254,37 +56,16 @@ export class OpenRouterAdapter extends ArtistAdapter {
 import { ARTISTS } from "./artists";
 
 /**
- * Artist registry - dynamically built from ARTISTS config
- * This ensures a single source of truth for artist configuration
+ * Artist registry - all models use OpenRouter for unified BYOK access
+ * This provides consistent cost tracking and API management
  */
 export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = Object.fromEntries(
   ARTISTS.map((config) => {
-    let adapter: ArtistAdapter;
-
-    switch (config.provider) {
-      case "openai":
-        adapter = new OpenAIArtist(config.slug, config.displayName);
-        break;
-      case "anthropic":
-        adapter = new AnthropicArtist(config.slug, config.displayName);
-        break;
-      case "google":
-        adapter = new GoogleArtist(config.slug, config.displayName);
-        break;
-      case "openrouter":
-        if (!config.openrouterModel) {
-          throw new Error(`OpenRouter model missing for ${config.slug}`);
-        }
-        adapter = new OpenRouterAdapter(
-          config.slug,
-          config.displayName,
-          config.openrouterModel
-        );
-        break;
-      default:
-        throw new Error(`Unknown provider: ${config.provider}`);
-    }
-
+    const adapter = new OpenRouterAdapter(
+      config.slug,
+      config.displayName,
+      config.openrouterModel
+    );
     return [config.slug, adapter];
   })
 );

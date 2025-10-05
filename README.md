@@ -10,9 +10,9 @@ biases, emotional tones, and worldviews under identical creative constraints.
 
 Feeling Machines now ships two tightly coupled experiences:
 
-- **Gallery** – a public, research-forward showcase that juxtaposes model outputs
-  in a striking, editorial layout. Visitors explore curated comparisons, skim
-  insights, and understand the broader study.
+- **Gallery** – a public, research-forward showcase that juxtaposes model
+  outputs in a striking, editorial layout. Visitors explore curated comparisons,
+  skim insights, and understand the broader study.
 - **Lab Console** – an internal workspace for researchers to configure batches,
   monitor progress, and review analytics that power the public story.
 
@@ -20,13 +20,13 @@ Feeling Machines now ships two tightly coupled experiences:
 
 ## 🎨 Core Concepts
 
-| Concept        | Description                                                                      | Examples                                                     |
-| -------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Artist**     | The reasoning model that imagines the artwork and writes the "artist statement." | `gpt-5-mini`, `claude-sonnet-4-5`, `gemini-2.5-flash`, `grok-4-fast`, `deepseek-chat` |
-| **Brush**      | The image model that renders the Artist's prompt into an image.                  | `gemini-2.5-flash-image`, `gpt-image-1`                |
-| **Prompt Set** | Canonical introspection prompt template; defines how Artists are queried.        | `v2-neutral`, `v2-artificial`, `persona-digital-monk`        |
-| **Run**        | One complete execution of Artist → Brush → Output.                               | `{ artist, brush, promptVersion, seed, statement, image }`   |
-| **Gallery**    | Front-end that displays runs and comparisons.                                    | Next.js + Convex app                                         |
+| Concept        | Description                                                                      | Examples                                                                              |
+| -------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Artist**     | The reasoning model that imagines the artwork and writes the "artist statement." | `gpt-5-mini`, `claude-sonnet-4.5`, `gemini-2.5-flash`, `grok-4-fast`, `deepseek-chat` |
+| **Brush**      | The image model that renders the Artist's prompt into an image.                  | `gemini-2.5-flash-image`, `gpt-image-1`                                               |
+| **Prompt Set** | Canonical introspection prompt template; defines how Artists are queried.        | `v2-neutral`, `v2-artificial`, `persona-digital-monk`                                 |
+| **Run**        | One complete execution of Artist → Brush → Output.                               | `{ artist, brush, promptVersion, seed, statement, image }`                            |
+| **Gallery**    | Front-end that displays runs and comparisons.                                    | Next.js + Convex app                                                                  |
 
 ---
 
@@ -53,21 +53,30 @@ Convex DB → Next.js Gallery
 
 ## 🖼️ Experience Architecture
 
-| Surface       | Audience            | Purpose                                                                 | Key Moments                                                                 |
-| ------------- | ------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Gallery**   | Visitors, press, collaborators | Showcase signature comparisons, narrate findings, and contextualize the research roadmap. | Hero collage, interactive comparison viewer, research highlights, dataset/newsletter CTAs. |
-| **Lab Console** | Research team      | Operate experiments, triage failures, and study analytics that feed the gallery. | Batch queue manager, prompt/model library, analytics dashboards, data export. |
+| Surface         | Audience                       | Purpose                                                                                   | Key Moments                                                                                |
+| --------------- | ------------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Gallery**     | Visitors, press, collaborators | Showcase signature comparisons, narrate findings, and contextualize the research roadmap. | Hero collage, interactive comparison viewer, research highlights, dataset/newsletter CTAs. |
+| **Lab Console** | Research team                  | Operate experiments, triage failures, and study analytics that feed the gallery.          | Batch queue manager, prompt/model library, analytics dashboards, data export.              |
 
 **Gallery priorities**
-- Hero strip featuring 3–4 curated comparisons with synchronized toggles for Artists and Brushes.
-- Story-driven research hub summarizing each phase with visuals, key metrics, and methodology callouts.
-- Comparison detail view with split-screen columns per Artist, synchronized zoom, and inline sentiment badges.
-- Insights page summarizing aggregated metrics (sentiment, palette, materiality) in public-friendly charts.
+
+- Hero strip featuring 3–4 curated comparisons with synchronized toggles for
+  Artists and Brushes.
+- Story-driven research hub summarizing each phase with visuals, key metrics,
+  and methodology callouts.
+- Comparison detail view with split-screen columns per Artist, synchronized
+  zoom, and inline sentiment badges.
+- Insights page summarizing aggregated metrics (sentiment, palette, materiality)
+  in public-friendly charts.
 
 **Lab Console priorities**
-- Table-first batch manager with filters (queued, generating, done, failed) and inline retry/duplicate controls.
-- Configurable run builder (prompt presets, artist sets, brush, batch size) with saved templates.
-- Analytics dashboard surfacing emotional trends, cost curves, failure diagnostics, and export hooks for deeper analysis.
+
+- Table-first batch manager with filters (queued, generating, done, failed) and
+  inline retry/duplicate controls.
+- Configurable run builder (prompt presets, artist sets, brush, batch size) with
+  saved templates.
+- Analytics dashboard surfacing emotional trends, cost curves, failure
+  diagnostics, and export hooks for deeper analysis.
 
 ---
 
@@ -91,9 +100,11 @@ vs GPT vs Gemini" visual comparison.
 
 ### **Phase 3 – "The Hidden Bias"** (In Progress)
 
-**Goal:** Quantify each Artist's "aesthetic fingerprint" through statistical analysis.
+**Goal:** Quantify each Artist's "aesthetic fingerprint" through statistical
+analysis.
 
 **What's Working:**
+
 - ✅ Batch comparison with multiple models running simultaneously
 - ✅ Automatic sentiment analysis on all artist statements
 - ✅ Model parameter presets (default, deterministic, creative, balanced)
@@ -101,15 +112,19 @@ vs GPT vs Gemini" visual comparison.
 - ✅ Sentiment data stored in database for analysis
 
 **In Development:**
+
 - Color palette extraction from rendered images
 - Materiality analysis (concrete vs speculative materials)
 - Cultural reference tracking
 - Statistical validation across multiple runs
 - Visualization dashboard showing model fingerprints
 
-**Key Insight:** For statistically meaningful analysis, we need multiple runs per model. The UI now supports batch sizes from 1× to 20× iterations, allowing reproducibility testing and variance measurement.
+**Key Insight:** For statistically meaningful analysis, we need multiple runs
+per model. The UI now supports batch sizes from 1× to 20× iterations, allowing
+reproducibility testing and variance measurement.
 
-**Output:** Data viz dashboard comparing emotional patterns, aesthetic preferences, and creative biases across models.
+**Output:** Data viz dashboard comparing emotional patterns, aesthetic
+preferences, and creative biases across models.
 
 ---
 
@@ -135,16 +150,16 @@ vs GPT vs Gemini" visual comparison.
 
 ```ts
 runs: defineTable({
-  runGroupId: v.string(),      // Links multiple runs from same batch
-  artistSlug: v.string(),       // e.g. "gpt-5-mini", "claude-sonnet-4-5"
-  brushSlug: v.string(),        // e.g. "gemini-2.5-flash-image"
-  promptVersion: v.string(),    // "v2-neutral" | "v3-introspective"
-  paramPreset: v.optional(v.string()),  // "default" | "deterministic" | "creative" | "balanced"
+  runGroupId: v.string(), // Links multiple runs from same batch
+  artistSlug: v.string(), // e.g. "gpt-5-mini", "claude-sonnet-4.5"
+  brushSlug: v.string(), // e.g. "gemini-2.5-flash-image"
+  promptVersion: v.string(), // "v2-neutral" | "v3-introspective"
+  paramPreset: v.optional(v.string()), // "default" | "deterministic" | "creative" | "balanced"
   artistStmt: v.string(),
   imagePrompt: v.string(),
   imageUrl: v.union(v.string(), v.null()),
-  status: v.string(),           // "queued" | "generating" | "done" | "failed"
-  meta: v.optional(v.any()),    // Cost, latency, model params
+  status: v.string(), // "queued" | "generating" | "done" | "failed"
+  meta: v.optional(v.any()), // Cost, latency, model params
   createdAt: v.number(),
 });
 
@@ -159,13 +174,14 @@ sentiment_analysis: defineTable({
     surprise: v.number(),
     neutral: v.number(),
   }),
-  valence: v.number(),       // -1 (negative) to 1 (positive)
-  arousal: v.number(),       // 0 (calm) to 1 (excited)
+  valence: v.number(), // -1 (negative) to 1 (positive)
+  arousal: v.number(), // 0 (calm) to 1 (excited)
   wordCount: v.number(),
   uniqueWords: v.number(),
-  abstractness: v.number(),  // 0 to 1
+  abstractness: v.number(), // 0 to 1
   createdAt: v.number(),
-}).index("by_run", ["runId"])
+})
+  .index("by_run", ["runId"])
   .index("by_artist", ["artistSlug"]);
 ```
 
@@ -173,13 +189,13 @@ sentiment_analysis: defineTable({
 
 ## 🧭 Roadmap Summary
 
-| Phase | Name                  | Core Goal         | Fun Deliverable         |
-| ----- | --------------------- | ----------------- | ----------------------- |
-| 1     | The Spark             | MVP               | First live gallery      |
-| 2     | The Chorus of Artists | Multi-LLM         | Compare view            |
-| 3     | The Hidden Bias       | Analytics         | Emotional palette viz   |
-| 4     | The Introspector      | Persona prompts   | Persona gallery         |
-| 5     | The White Paper       | Publication       | Dataset + paper         |
+| Phase | Name                  | Core Goal       | Fun Deliverable       |
+| ----- | --------------------- | --------------- | --------------------- |
+| 1     | The Spark             | MVP             | First live gallery    |
+| 2     | The Chorus of Artists | Multi-LLM       | Compare view          |
+| 3     | The Hidden Bias       | Analytics       | Emotional palette viz |
+| 4     | The Introspector      | Persona prompts | Persona gallery       |
+| 5     | The White Paper       | Publication     | Dataset + paper       |
 
 ---
 
@@ -285,7 +301,8 @@ is that from training data, alignment layers, or anthropomorphic projection?
 seed changes?
 
 **Sampling scale:** How many runs per model are enough for a meaningful
-comparison? **Current approach:** UI supports 1×, 3×, 5×, 10×, and 20× batch sizes for statistical testing.
+comparison? **Current approach:** UI supports 1×, 3×, 5×, 10×, and 20× batch
+sizes for statistical testing.
 
 **Bias quantification:** What metrics best represent emotional bias — sentiment
 polarity, vocabulary, color palette, image entropy?

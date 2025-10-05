@@ -85,17 +85,15 @@ export class OpenRouterArtist {
     const statement = statementMatch[1].trim();
     const imagePrompt = promptMatch[1].trim();
 
-    // Estimate cost based on usage if available
+    // Get token usage
     const usage = data.usage || {};
     const inputTokens = usage.prompt_tokens || 0;
     const outputTokens = usage.completion_tokens || 0;
 
-    // Rough cost estimation (varies by model, these are conservative estimates)
-    const inputCostPer1M = 0.50; // $0.50 per 1M input tokens
-    const outputCostPer1M = 1.50; // $1.50 per 1M output tokens
-    const costEstimate =
-      (inputTokens / 1_000_000) * inputCostPer1M +
-      (outputTokens / 1_000_000) * outputCostPer1M;
+    // OpenRouter provides actual cost in response headers (X-RateLimit-Cost)
+    // and in the response body under usage.total_cost if available
+    // Format: usage.total_cost is in USD (e.g., 0.00123 for $0.00123)
+    const costEstimate = usage.total_cost || 0;
 
     return {
       statement,

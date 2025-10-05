@@ -12,13 +12,27 @@ describe("Sentiment Analysis Queries", () => {
     it("should calculate average emotions correctly", () => {
       const _mockSentiments = [
         {
-          emotions: { joy: 0.8, sadness: 0.2, anger: 0.1, fear: 0.1, surprise: 0.3, neutral: 0.4 },
+          emotions: {
+            joy: 0.8,
+            sadness: 0.2,
+            anger: 0.1,
+            fear: 0.1,
+            surprise: 0.3,
+            neutral: 0.4,
+          },
           valence: 0.6,
           arousal: 0.7,
           abstractness: 0.5,
         },
         {
-          emotions: { joy: 0.6, sadness: 0.4, anger: 0.2, fear: 0.3, surprise: 0.1, neutral: 0.6 },
+          emotions: {
+            joy: 0.6,
+            sadness: 0.4,
+            anger: 0.2,
+            fear: 0.3,
+            surprise: 0.1,
+            neutral: 0.6,
+          },
           valence: 0.2,
           arousal: 0.5,
           abstractness: 0.7,
@@ -69,7 +83,9 @@ describe("Sentiment Analysis Queries", () => {
     it("should calculate standard deviation correctly", () => {
       const values = [0.6, 0.2, -0.1];
       const mean = values.reduce((a, b) => a + b, 0) / values.length;
-      const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+      const variance =
+        values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+        values.length;
       const stdDev = Math.sqrt(variance);
 
       // With mean ≈ 0.233:
@@ -83,8 +99,14 @@ describe("Sentiment Analysis Queries", () => {
     it("should identify most joyful artist", () => {
       const artistData = [
         { artistSlug: "gpt-5-mini", avgEmotions: { joy: 0.7, sadness: 0.3 } },
-        { artistSlug: "claude-sonnet-4-5", avgEmotions: { joy: 0.5, sadness: 0.4 } },
-        { artistSlug: "gemini-2.5-flash", avgEmotions: { joy: 0.9, sadness: 0.2 } },
+        {
+          artistSlug: "claude-sonnet-4.5",
+          avgEmotions: { joy: 0.5, sadness: 0.4 },
+        },
+        {
+          artistSlug: "gemini-2.5-flash",
+          avgEmotions: { joy: 0.9, sadness: 0.2 },
+        },
       ];
 
       const mostJoyful = artistData.reduce((max, curr) =>
@@ -119,7 +141,7 @@ describe("Sentiment Analysis Queries", () => {
         { createdAt: dayAgo, valence: 0.7 },
       ];
 
-      const recentRuns = mockRuns.filter(r => r.createdAt > hourAgo - 1000);
+      const recentRuns = mockRuns.filter((r) => r.createdAt > hourAgo - 1000);
       expect(recentRuns.length).toBe(2);
     });
   });

@@ -68,7 +68,7 @@ export function NewComparisonDialog({
   );
   const [selectedPrompt, setSelectedPrompt] =
     useState<string>("v3-introspective");
-  const [selectedIterations, setSelectedIterations] = useState<number>(5);
+  const [selectedIterations, setSelectedIterations] = useState<number>(1);
 
   const toggleArtist = (slug: string) => {
     setSelectedArtists((prev) =>

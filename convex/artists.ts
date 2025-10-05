@@ -1,44 +1,41 @@
 export interface ArtistConfig {
   slug: string;
-  provider: string;
   producer: string;
   displayName: string;
-  /** OpenRouter model identifier (only for openrouter provider) */
-  openrouterModel?: string;
+  /** OpenRouter model identifier for BYOK (bring your own key) */
+  openrouterModel: string;
 }
 
 export const ARTISTS: ArtistConfig[] = [
   {
     slug: "gpt-5-mini",
-    provider: "openai",
     producer: "OpenAI",
     displayName: "GPT-5 Mini",
+    openrouterModel: "openai/gpt-5-mini", // https://openrouter.ai/openai/gpt-5-mini
   },
   {
-    slug: "claude-sonnet-4-5",
-    provider: "anthropic",
+    slug: "claude-sonnet-4.5",
     producer: "Anthropic",
     displayName: "Claude Sonnet 4.5",
+    openrouterModel: "anthropic/claude-sonnet-4.5", // https://openrouter.ai/anthropic/claude-sonnet-4.5
   },
   {
     slug: "gemini-2.5-flash",
-    provider: "google",
     producer: "Google",
     displayName: "Gemini 2.5 Flash",
+    openrouterModel: "google/gemini-2.5-flash", // https://openrouter.ai/google/gemini-2.5-flash
   },
   {
     slug: "grok-4-fast",
-    provider: "openrouter",
     producer: "xAI",
     displayName: "Grok 4 Fast",
-    openrouterModel: "x-ai/grok-4-fast",
+    openrouterModel: "x-ai/grok-4-fast", // https://openrouter.ai/x-ai/grok-4-fast
   },
   {
     slug: "deepseek-chat",
-    provider: "openrouter",
     producer: "DeepSeek",
     displayName: "DeepSeek Chat",
-    openrouterModel: "deepseek/deepseek-chat-v3.1",
+    openrouterModel: "deepseek/deepseek-chat-v3.1", // https://openrouter.ai/deepseek/deepseek-chat-v3.1
   },
 ];
 

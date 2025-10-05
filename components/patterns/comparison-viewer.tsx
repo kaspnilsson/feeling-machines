@@ -4,13 +4,9 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InsightBadge } from "@/components/patterns/insight-badge";
-import { ComparisonStrip } from "@/components/patterns/comparison-strip";
-import { cn } from "@/lib/utils";
 import { AlertCircle, XCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface RunMeta {
   artist?: {
@@ -37,10 +33,16 @@ export interface ComparisonRun {
 
 interface ComparisonViewerProps {
   runs: ComparisonRun[];
+  selectedRunId?: string;
+  onRunSelect?: (runId: string) => void;
 }
 
-export function ComparisonViewer({ runs }: ComparisonViewerProps) {
-  const [activeId, setActiveId] = useState<string | undefined>(runs[0]?._id);
+export function ComparisonViewer({ runs, selectedRunId, onRunSelect }: ComparisonViewerProps) {
+  const [internalActiveId, setInternalActiveId] = useState<string | undefined>(runs[0]?._id);
+
+  // Use controlled selectedRunId if provided, otherwise use internal state
+  const activeId = selectedRunId ?? internalActiveId;
+  const _setActiveId = onRunSelect ?? setInternalActiveId;
 
   const activeRun = useMemo(() => {
     if (!activeId) return runs[0];
@@ -59,69 +61,67 @@ export function ComparisonViewer({ runs }: ComparisonViewerProps) {
 
   const isPending = activeRun.status !== "done" && !activeRun.imageUrl;
 
-  const items = runs.map((run) => ({
-    id: run._id,
-    label: run.artistSlug,
-    status:
-      run.status === "done"
-        ? "Done"
-        : run.status === "failed"
-          ? "Failed"
-          : run.status === "generating"
-            ? "In flight"
-            : "Queued",
-    isActive: run._id === activeRun._id,
-    onSelect: () => setActiveId(run._id),
-  }));
-
   return (
     <div className="space-y-6">
-      <ComparisonStrip items={items} />
+      <Card className="overflow-hidden border-border bg-card">
+        <CardContent className="p-0">
+          <div className="relative aspect-[4/3] w-full bg-muted">
+            {activeRun.imageUrl && activeRun.status === "done" ? (
+              <img
+                src={activeRun.imageUrl}
+                alt={`${activeRun.artistSlug} artwork`}
+                className="h-full w-full object-cover"
+              />
+            ) : activeRun.status === "failed" ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-destructive/5 text-center">
+                <div className="rounded-full bg-destructive/10 p-4">
+                  <XCircle className="h-10 w-10 text-destructive" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-destructive">Generation failed</p>
+                  <p className="text-xs text-muted-foreground">Error details below</p>
+                </div>
+              </div>
+            ) : isPending ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <p className="text-sm text-muted-foreground">Generating artwork…</p>
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/60 text-center">
+                <p className="text-sm font-medium text-foreground">No image available</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-        <Card className="overflow-hidden border-border bg-card">
-          <CardContent className="p-0">
-            <div className="relative aspect-[4/3] w-full bg-muted">
-              {activeRun.imageUrl && activeRun.status === "done" ? (
-                <img
-                  src={activeRun.imageUrl}
-                  alt={`${activeRun.artistSlug} artwork`}
-                  className="h-full w-full object-cover"
-                />
-              ) : activeRun.status === "failed" ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-destructive/5 text-center">
-                  <div className="rounded-full bg-destructive/10 p-4">
-                    <XCircle className="h-10 w-10 text-destructive" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-destructive">Generation failed</p>
-                    <p className="text-xs text-muted-foreground">Error details in sidebar</p>
-                  </div>
-                </div>
-              ) : isPending ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-                  <Skeleton className="h-16 w-16 rounded-full" />
-                  <p className="text-sm text-muted-foreground">Generating artwork…</p>
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/60 text-center">
-                  <p className="text-sm font-medium text-foreground">No image available</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-5">
-          <div className="space-y-2">
+      <div className="space-y-5">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">LLM · {activeRun.artistSlug}</Badge>
               <Badge variant="outline">Image · {activeRun.brushSlug}</Badge>
               <InsightBadge>{statusLabel(activeRun.status)}</InsightBadge>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Inspect the model statement, the exact prompt we sent to the brush, and the metadata we log for transparency.
-            </p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {activeRun.meta?.artist?.tokens && (
+                <Badge variant="outline">
+                  Tokens · {activeRun.meta.artist.tokens.toLocaleString()}
+                </Badge>
+              )}
+              <Badge variant="outline">
+                Cost · $
+                {(
+                  (activeRun.meta?.artist?.costEstimate || 0) +
+                  (activeRun.meta?.brush?.costEstimate || 0)
+                ).toFixed(6)}
+              </Badge>
+              {activeRun.meta?.totalLatencyMs && (
+                <Badge variant="outline">
+                  Time · {(activeRun.meta.totalLatencyMs / 1000).toFixed(1)}s
+                </Badge>
+              )}
+            </div>
           </div>
 
           {activeRun.status === "failed" && activeRun.errorMessage && (
@@ -142,7 +142,7 @@ export function ComparisonViewer({ runs }: ComparisonViewerProps) {
 
           {(activeRun.artistStmt || activeRun.imagePrompt) && (
             <Card className="border-border/70 bg-card">
-              <CardContent className="space-y-4 p-6">
+              <CardContent className="space-y-4 p-6 max-h-96 overflow-y-auto">
                 {activeRun.artistStmt && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Model statement</h3>
@@ -162,76 +162,6 @@ export function ComparisonViewer({ runs }: ComparisonViewerProps) {
               </CardContent>
             </Card>
           )}
-
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">Pipeline metadata</h3>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {activeRun.meta?.artist?.tokens && (
-                <Badge variant="outline">
-                  LLM tokens · {activeRun.meta.artist.tokens}
-                </Badge>
-              )}
-              <Badge variant="outline">
-                Pipeline cost · $
-                {(
-                  (activeRun.meta?.artist?.costEstimate || 0) +
-                  (activeRun.meta?.brush?.costEstimate || 0)
-                ).toFixed(6)}
-              </Badge>
-              {activeRun.meta?.totalLatencyMs && (
-                <Badge variant="outline">
-                  Pipeline time · {(activeRun.meta.totalLatencyMs / 1000).toFixed(1)}s
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Separator className="border-border/70" />
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {runs.map((run) => (
-          <Card
-            key={run._id}
-            className={cn(
-              "overflow-hidden border-border/60 bg-card transition-transform hover:-translate-y-[2px]",
-              run._id === activeRun._id && "border-primary/60",
-              run.status === "failed" && "border-destructive/50"
-            )}
-          >
-            <button
-              type="button"
-              className="flex w-full flex-col text-left"
-              onClick={() => setActiveId(run._id)}
-            >
-              <div className="relative aspect-[4/3] bg-muted">
-                {run.imageUrl && run.status === "done" ? (
-                  <img
-                    src={run.imageUrl}
-                    alt={`${run.artistSlug} artwork thumbnail`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : run.status === "failed" ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-destructive/5">
-                    <div className="rounded-full bg-destructive/10 p-2">
-                      <XCircle className="h-5 w-5 text-destructive" />
-                    </div>
-                    <span className="text-xs font-medium text-destructive">Failed</span>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                    {statusLabel(run.status)}
-                  </div>
-                )}
-              </div>
-              <CardContent className="space-y-1.5 p-4">
-                <p className="text-sm font-medium text-foreground">{run.artistSlug}</p>
-                <p className="text-xs text-muted-foreground">Image · {run.brushSlug}</p>
-              </CardContent>
-            </button>
-          </Card>
-        ))}
       </div>
     </div>
   );

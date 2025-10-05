@@ -10,6 +10,7 @@ const navItems = [
   { href: "/console/batches", label: "Batches" },
   { href: "/console/library", label: "Library" },
   { href: "/console/analytics", label: "Analytics" },
+  { href: "/console/settings", label: "Settings" },
 ];
 
 export function ConsoleShell({ children }: { children: ReactNode }) {

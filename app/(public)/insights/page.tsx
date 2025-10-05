@@ -15,12 +15,7 @@ import {
   PageTitle,
 } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -41,7 +36,7 @@ const paletteSpotlights = [
     note: "Leans into golden hour hues with cool accents for contrast.",
   },
   {
-    artistSlug: "claude-sonnet-4-5",
+    artistSlug: "claude-sonnet-4.5",
     colors: ["#F6F1EB", "#D7CCC8", "#8D6E63", "#5D4037"],
     temperature: "Neutral",
     note: "Prefers soft neutrals and natural materials lighting cues.",
@@ -61,7 +56,7 @@ const materialitySpotlights = [
     speculative: ["phosphorescent silk"],
   },
   {
-    artistSlug: "claude-sonnet-4-5",
+    artistSlug: "claude-sonnet-4.5",
     concrete: ["paper screens", "oak frames"],
     speculative: ["responsive light membranes"],
   },
@@ -77,12 +72,15 @@ export default function InsightsPage() {
     api.sentiment.compareArtistSentiments
   ) as SentimentRow[] | undefined;
   const colorComparison = useQuery(api.colors.compareArtistColors);
-  const materialityComparison = useQuery(api.materiality.compareArtistMateriality);
+  const materialityComparison = useQuery(
+    api.materiality.compareArtistMateriality
+  );
 
   const isLoading = sentimentComparison === undefined;
   const hasData = !!sentimentComparison && sentimentComparison.length > 0;
   const hasColorData = !!colorComparison && colorComparison.length > 0;
-  const hasMaterialityData = !!materialityComparison && materialityComparison.length > 0;
+  const hasMaterialityData =
+    !!materialityComparison && materialityComparison.length > 0;
 
   const summary = useMemo(() => {
     if (!hasData) return null;
@@ -226,19 +224,21 @@ export default function InsightsPage() {
                 }
               />
               <div className="grid gap-4 md:grid-cols-3">
-                {hasColorData ? (
-                  colorComparison.map((color) => (
-                    <ColorDataCard key={color.artistSlug} data={color} />
-                  ))
-                ) : (
-                  paletteSpotlights.map((palette) => (
-                    <ColorPaletteCard key={palette.artistSlug} palette={palette} />
-                  ))
-                )}
+                {hasColorData
+                  ? colorComparison.map((color) => (
+                      <ColorDataCard key={color.artistSlug} data={color} />
+                    ))
+                  : paletteSpotlights.map((palette) => (
+                      <ColorPaletteCard
+                        key={palette.artistSlug}
+                        palette={palette}
+                      />
+                    ))}
               </div>
               {!hasColorData && (
                 <p className="text-xs text-muted-foreground">
-                  📊 Color analysis runs automatically on generated images. Data will appear here as batches complete.
+                  📊 Color analysis runs automatically on generated images. Data
+                  will appear here as batches complete.
                 </p>
               )}
             </section>
@@ -253,19 +253,21 @@ export default function InsightsPage() {
                 }
               />
               <div className="grid gap-4 md:grid-cols-3">
-                {hasMaterialityData ? (
-                  materialityComparison.map((mat) => (
-                    <MaterialityDataCard key={mat.artistSlug} data={mat} />
-                  ))
-                ) : (
-                  materialitySpotlights.map((item) => (
-                    <MaterialityCard key={item.artistSlug} materiality={item} />
-                  ))
-                )}
+                {hasMaterialityData
+                  ? materialityComparison.map((mat) => (
+                      <MaterialityDataCard key={mat.artistSlug} data={mat} />
+                    ))
+                  : materialitySpotlights.map((item) => (
+                      <MaterialityCard
+                        key={item.artistSlug}
+                        materiality={item}
+                      />
+                    ))}
               </div>
               {!hasMaterialityData && (
                 <p className="text-xs text-muted-foreground">
-                  📊 Materiality analysis runs automatically on artist statements. Data will appear here as batches complete.
+                  📊 Materiality analysis runs automatically on artist
+                  statements. Data will appear here as batches complete.
                 </p>
               )}
             </section>
@@ -371,7 +373,9 @@ function ColorPaletteCard({
     <Card className="border-border/60 bg-card">
       <CardContent className="space-y-4 p-6">
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-foreground">{palette.artistSlug}</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {palette.artistSlug}
+          </h3>
           <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
             {palette.temperature} palette
           </p>
@@ -405,13 +409,17 @@ function MaterialityCard({
     <Card className="border-border/60 bg-card">
       <CardContent className="space-y-4 p-6">
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-foreground">{materiality.artistSlug}</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {materiality.artistSlug}
+          </h3>
           <p className="text-xs text-muted-foreground">
             Concrete vs speculative mediums flagged by the pipeline.
           </p>
         </div>
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">Concrete</p>
+          <p className="text-xs font-semibold text-muted-foreground">
+            Concrete
+          </p>
           <ul className="space-y-1 text-sm text-foreground">
             {materiality.concrete.map((item) => (
               <li key={item}>• {item}</li>
@@ -419,7 +427,9 @@ function MaterialityCard({
           </ul>
         </div>
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">Speculative</p>
+          <p className="text-xs font-semibold text-muted-foreground">
+            Speculative
+          </p>
           <ul className="space-y-1 text-sm text-foreground">
             {materiality.speculative.map((item) => (
               <li key={item}>• {item}</li>
@@ -563,7 +573,8 @@ function MaterialityDataCard({
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Materials</span>
             <span className="font-medium text-foreground">
-              {data.concreteCount} concrete / {data.speculativeCount} speculative
+              {data.concreteCount} concrete / {data.speculativeCount}{" "}
+              speculative
             </span>
           </div>
         </div>

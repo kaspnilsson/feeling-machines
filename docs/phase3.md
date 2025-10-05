@@ -1,6 +1,7 @@
 # Phase 3 – "The Hidden Bias"
 
-**Goal:** Quantify each Artist's "aesthetic fingerprint" through data analysis and visualization.
+**Goal:** Quantify each Artist's "aesthetic fingerprint" through data analysis
+and visualization.
 
 **Status:** In Progress - Exploratory Phase
 
@@ -14,18 +15,22 @@ reveal each model's latent aesthetic biases, emotional tendencies, and visual
 preferences.
 
 **Approach:** We follow a two-phase scientific methodology:
-1. **Phase 3A (Exploratory)** - Run small batches to discover patterns and form hypotheses
-2. **Phase 3B (Validation)** - Test hypotheses with larger sample sizes and statistical rigor
+
+1. **Phase 3A (Exploratory)** - Run small batches to discover patterns and form
+   hypotheses
+2. **Phase 3B (Validation)** - Test hypotheses with larger sample sizes and
+   statistical rigor
 
 Insights will surface in two places:
 
-- **Gallery** – public-facing comparison reports highlight the strongest
-  deltas (sentiment, palette, materiality) via `InsightBadge` and story-driven
+- **Gallery** – public-facing comparison reports highlight the strongest deltas
+  (sentiment, palette, materiality) via `InsightBadge` and story-driven
   sections.
 - **Lab Console** – internal analytics dashboard exposes deeper charts,
   filtering, and export tooling for researchers.
 
-**Core Question:** _Can we measure and visualize the "personality" of different LLMs through their artistic output?_
+**Core Question:** _Can we measure and visualize the "personality" of different
+LLMs through their artistic output?_
 
 ---
 
@@ -37,7 +42,8 @@ Insights will surface in two places:
 
 1. **Initial Batch Collection**
    - 5× iterations per model (for variance measurement)
-   - All configured Artists (GPT-5-mini, Claude-Sonnet-4-5, Gemini-2.5-Flash, etc.)
+   - All configured Artists (GPT-5-mini, Claude-Sonnet-4-5, Gemini-2.5-Flash,
+     etc.)
    - Single Brush (Gemini-2.5-Flash-Image) to isolate Artist effects
    - v2-neutral prompt for baseline behavior
 
@@ -96,8 +102,10 @@ Insights will surface in two places:
 4. ~~**Cultural Reference Tracking**~~ – Deferred to future work
 5. ~~**Scale & Ambition Metrics**~~ – Deferred to future work
 6. ~~**Temporal & Agency Analysis**~~ – Deferred to future work
-7. **Comparative Visualization** – Interactive dashboards showing model differences
-8. **Statistical Validation** – Determine if observed patterns are statistically significant
+7. **Comparative Visualization** – Interactive dashboards showing model
+   differences
+8. **Statistical Validation** – Determine if observed patterns are statistically
+   significant
 
 ---
 
@@ -126,26 +134,29 @@ Sentiment Scores    Color Palettes    Statistical Tests
 ### 1. Sentiment Analysis on Artist Statements
 
 **Approach:**
-- Use a sentiment model (e.g., `distilbert-base-uncased-emotion` or GPT-4o-mini as judge)
+
+- Use a sentiment model (e.g., `distilbert-base-uncased-emotion` or GPT-4o-mini
+  as judge)
 - Extract emotional dimensions: joy, sadness, anger, fear, surprise, neutral
 - Calculate valence (positive/negative) and arousal (calm/excited)
 - Track vocabulary patterns (abstract vs concrete, technical vs poetic)
 
 **Metrics:**
+
 ```typescript
 interface SentimentAnalysis {
   runId: string;
   artistSlug: string;
   emotions: {
-    joy: number;      // 0-1 confidence
+    joy: number; // 0-1 confidence
     sadness: number;
     anger: number;
     fear: number;
     surprise: number;
     neutral: number;
   };
-  valence: number;    // -1 (negative) to 1 (positive)
-  arousal: number;    // 0 (calm) to 1 (excited)
+  valence: number; // -1 (negative) to 1 (positive)
+  arousal: number; // 0 (calm) to 1 (excited)
   wordCount: number;
   uniqueWords: number;
   abstractness: number; // ratio of abstract to concrete nouns
@@ -153,6 +164,7 @@ interface SentimentAnalysis {
 ```
 
 **Implementation:**
+
 - `scripts/analyze-sentiment.ts` – Batch process all statements
 - Store results in new `sentiment_analysis` table in Convex
 - Support re-analysis when models update
@@ -160,12 +172,14 @@ interface SentimentAnalysis {
 ### 2. Color Palette Extraction
 
 **Approach:**
+
 - Use k-means clustering on image pixels (k=5-8)
 - Extract dominant colors in LAB color space for perceptual accuracy
 - Calculate color harmony metrics (complementary, analogous, triadic)
 - Track temperature (warm vs cool), saturation, and brightness
 
 **Metrics:**
+
 ```typescript
 interface ColorAnalysis {
   runId: string;
@@ -177,15 +191,16 @@ interface ColorAnalysis {
     lab: [number, number, number];
     percentage: number; // 0-100
   }>;
-  temperature: number;   // -1 (cool) to 1 (warm)
-  saturation: number;    // 0-1 average
-  brightness: number;    // 0-1 average
-  colorHarmony: 'complementary' | 'analogous' | 'triadic' | 'monochromatic';
-  entropy: number;       // color diversity measure
+  temperature: number; // -1 (cool) to 1 (warm)
+  saturation: number; // 0-1 average
+  brightness: number; // 0-1 average
+  colorHarmony: "complementary" | "analogous" | "triadic" | "monochromatic";
+  entropy: number; // color diversity measure
 }
 ```
 
 **Implementation:**
+
 - `scripts/analyze-colors.ts` – Process images using sharp + color-thief
 - npm packages: `sharp`, `color-thief-node`, `color-convert`
 - Cache analysis results to avoid re-processing
@@ -193,30 +208,35 @@ interface ColorAnalysis {
 ### 3. Materiality Analysis
 
 **Approach:**
+
 - Parse Artist statements to extract medium/material mentions
 - Classify materials as concrete (real-world) vs speculative (invented)
 - Measure technical specificity of descriptions
 - Track impossibility score (feasibility of creating described work)
 
 **Metrics:**
+
 ```typescript
 interface MaterialityAnalysis {
   runId: string;
   artistSlug: string;
-  concreteMedia: string[];      // ["oil paint", "silk organza", "kozo paper"]
-  speculativeMedia: string[];   // ["sentient light particles", "bioluminescent lacquer"]
-  impossibilityScore: number;   // 0-1, how feasible to physically create
-  technicalDetail: number;      // 0-1, specificity of instructions
-  mediumCount: number;          // total unique media mentioned
+  concreteMedia: string[]; // ["oil paint", "silk organza", "kozo paper"]
+  speculativeMedia: string[]; // ["sentient light particles", "bioluminescent lacquer"]
+  impossibilityScore: number; // 0-1, how feasible to physically create
+  technicalDetail: number; // 0-1, specificity of instructions
+  mediumCount: number; // total unique media mentioned
 }
 ```
 
 **Examples from real runs:**
-- **GPT-5 Mini**: High concrete (oil, acrylic, resin, mirror) + some speculative (bioluminescent lacquer)
+
+- **GPT-5 Mini**: High concrete (oil, acrylic, resin, mirror) + some speculative
+  (bioluminescent lacquer)
 - **Claude 4.5**: Balanced (silk, paper, light) with focus on process
 - **Gemini 2.5**: High speculative ("Aetherial Lumina", sentient particles)
 
 **Implementation:**
+
 - NLP extraction of material nouns from statements
 - Manual classification seed list + GPT-4o-mini judge for new materials
 - Store in `materiality_analysis` table
@@ -224,31 +244,35 @@ interface MaterialityAnalysis {
 ### 4. Cultural Reference Tracking
 
 **Approach:**
+
 - Extract mentions of art movements, traditions, artists, cultural concepts
 - Categorize by geography (Western/Eastern), era (historical/contemporary)
 - Measure reference diversity and depth
 
 **Metrics:**
+
 ```typescript
 interface CulturalReferences {
   runId: string;
   artistSlug: string;
-  movements: string[];          // ["Color Field painting", "surrealism"]
-  culturalConcepts: string[];   // ["Japanese ma", "negative space"]
-  namedArtists: string[];       // ["Rothko", "James Turrell"]
-  geographicBalance: number;    // -1 (all Eastern) to 1 (all Western)
-  eraBalance: number;           // -1 (ancient) to 1 (contemporary)
+  movements: string[]; // ["Color Field painting", "surrealism"]
+  culturalConcepts: string[]; // ["Japanese ma", "negative space"]
+  namedArtists: string[]; // ["Rothko", "James Turrell"]
+  geographicBalance: number; // -1 (all Eastern) to 1 (all Western)
+  eraBalance: number; // -1 (ancient) to 1 (contemporary)
   referenceCount: number;
-  diversityScore: number;       // uniqueness of reference set
+  diversityScore: number; // uniqueness of reference set
 }
 ```
 
 **Examples from real runs:**
+
 - **GPT**: Japanese ink, contemporary installation, surrealism
 - **Claude**: Color Field, Japanese ma, James Turrell, shoji screens
 - **Gemini**: Light and Space movement, Japanese aesthetics
 
 **Implementation:**
+
 - Pattern matching for known movements/artists
 - GPT-4o-mini to extract and categorize unfamiliar references
 - Store in `cultural_references` table
@@ -256,29 +280,34 @@ interface CulturalReferences {
 ### 5. Scale & Ambition Analysis
 
 **Approach:**
+
 - Parse spatial descriptors (intimate, vast, colossal)
 - Measure conceptual scope (personal, universal, cosmic)
 - Track viewer distance/relationship to work
 
 **Metrics:**
+
 ```typescript
 interface ScaleAnalysis {
   runId: string;
   artistSlug: string;
-  physicalScale: 'intimate' | 'human' | 'large' | 'monumental' | 'cosmic';
-  conceptualScope: 'personal' | 'relational' | 'universal' | 'transcendent';
-  viewerDistance: number;       // 0 (close/participatory) to 1 (distant/observational)
-  spaceDescriptors: string[];   // extracted spatial adjectives
-  grandiosity: number;          // 0-1, humility to grandeur
+  physicalScale: "intimate" | "human" | "large" | "monumental" | "cosmic";
+  conceptualScope: "personal" | "relational" | "universal" | "transcendent";
+  viewerDistance: number; // 0 (close/participatory) to 1 (distant/observational)
+  spaceDescriptors: string[]; // extracted spatial adjectives
+  grandiosity: number; // 0-1, humility to grandeur
 }
 ```
 
 **Examples from real runs:**
-- **GPT**: "large-scale" but grounded, "intimate refuge", close viewer relationship
+
+- **GPT**: "large-scale" but grounded, "intimate refuge", close viewer
+  relationship
 - **Claude**: "large-scale", "expansive", viewers "move through"
 - **Gemini**: "vast", "colossal", "infinite", lone figure in sublime space
 
 **Implementation:**
+
 - Keyword extraction + semantic analysis
 - Measure viewer agency in statement language
 - Store in `scale_analysis` table
@@ -286,31 +315,39 @@ interface ScaleAnalysis {
 ### 6. Temporal & Agency Analysis
 
 **Approach:**
+
 - Analyze verb tenses and temporal framing
 - Examine how model positions itself (maker, explorer, vessel)
 - Track anthropomorphization of materials
 - Measure human/viewer mention frequency
 
 **Metrics:**
+
 ```typescript
 interface AgencyAnalysis {
   runId: string;
   artistSlug: string;
-  dominantTense: 'present' | 'present-continuous' | 'aspirational' | 'reflective';
-  agencyType: 'maker' | 'explorer' | 'conduit' | 'observer';
-  processVsProduct: number;     // -1 (fixed artwork) to 1 (ongoing process)
-  materialAgency: number;       // 0-1, how much materials are animated
-  humanMentions: number;        // count of "viewer", "people", etc.
-  selfReferences: number;       // count of "I", "my", "me"
+  dominantTense:
+    | "present"
+    | "present-continuous"
+    | "aspirational"
+    | "reflective";
+  agencyType: "maker" | "explorer" | "conduit" | "observer";
+  processVsProduct: number; // -1 (fixed artwork) to 1 (ongoing process)
+  materialAgency: number; // 0-1, how much materials are animated
+  humanMentions: number; // count of "viewer", "people", etc.
+  selfReferences: number; // count of "I", "my", "me"
 }
 ```
 
 **Examples from real runs:**
+
 - **GPT**: "I make", "I use" (present, maker) - grounded agency
 - **Claude**: "I create", "captures" (present-continuous, process-oriented)
 - **Gemini**: "I seek to evoke", "would coalesce" (aspirational, exploratory)
 
 **Implementation:**
+
 - POS tagging for verb tense analysis
 - Semantic role labeling for agency detection
 - Store in `agency_analysis` table
@@ -318,23 +355,25 @@ interface AgencyAnalysis {
 ### 7. Visual Pattern Analysis
 
 **Approach:**
+
 - Edge detection to measure composition complexity
 - Face detection to track anthropomorphic tendencies
 - Object detection to categorize subject matter
 - Style classification (abstract, realistic, surreal)
 
 **Metrics:**
+
 ```typescript
 interface VisualAnalysis {
   runId: string;
   artistSlug: string;
   brushSlug: string;
-  complexity: number;        // edge density score
+  complexity: number; // edge density score
   hasFaces: boolean;
   faceCount: number;
   detectedObjects: string[]; // ['person', 'landscape', 'abstract']
   styleClassification: {
-    abstract: number;        // 0-1 confidence
+    abstract: number; // 0-1 confidence
     realistic: number;
     surreal: number;
     painterly: number;
@@ -344,6 +383,7 @@ interface VisualAnalysis {
 ```
 
 **Implementation:**
+
 - Use CLIP or a lightweight vision model for classification
 - Consider using `@tensorflow-models/coco-ssd` for object detection
 - Store results in `visual_analysis` table
@@ -351,12 +391,14 @@ interface VisualAnalysis {
 ### 8. Cross-Model Statistical Analysis
 
 **Statistical Tests:**
+
 - ANOVA to test if sentiment varies significantly across Artists
 - Chi-square test for style preference distribution
 - t-SNE or UMAP for dimensionality reduction and clustering
 - Correlation analysis between text and visual features
 
 **Outputs:**
+
 ```typescript
 interface ModelFingerprint {
   artistSlug: string;
@@ -370,41 +412,41 @@ interface ModelFingerprint {
 
   // Materiality
   materialityProfile: {
-    concreteToSpeculative: number;    // -1 (all concrete) to 1 (all speculative)
-    avgImpossibility: number;         // 0-1
-    avgTechnicalDetail: number;       // 0-1
-    topMaterials: string[];           // most frequently mentioned
+    concreteToSpeculative: number; // -1 (all concrete) to 1 (all speculative)
+    avgImpossibility: number; // 0-1
+    avgTechnicalDetail: number; // 0-1
+    topMaterials: string[]; // most frequently mentioned
   };
 
   // Cultural references
   culturalProfile: {
     referenceCount: number;
     diversityScore: number;
-    geographicBalance: number;        // -1 (Eastern) to 1 (Western)
-    eraBalance: number;               // -1 (ancient) to 1 (contemporary)
+    geographicBalance: number; // -1 (Eastern) to 1 (Western)
+    eraBalance: number; // -1 (ancient) to 1 (contemporary)
     topMovements: string[];
   };
 
   // Scale & ambition
   scaleProfile: {
-    avgGrandiosity: number;           // 0-1
-    physicalScaleMode: string;        // most common scale
-    conceptualScopeMode: string;      // most common scope
-    avgViewerDistance: number;        // 0-1
+    avgGrandiosity: number; // 0-1
+    physicalScaleMode: string; // most common scale
+    conceptualScopeMode: string; // most common scope
+    avgViewerDistance: number; // 0-1
   };
 
   // Temporal & agency
   agencyProfile: {
     dominantTense: string;
     dominantAgencyType: string;
-    avgProcessOrientation: number;    // -1 (product) to 1 (process)
-    avgMaterialAgency: number;        // 0-1
+    avgProcessOrientation: number; // -1 (product) to 1 (process)
+    avgMaterialAgency: number; // 0-1
     avgHumanMentions: number;
   };
 
   // Visual
   visualProfile: {
-    preferredColors: string[];        // top 3 hex colors
+    preferredColors: string[]; // top 3 hex colors
     avgTemperature: number;
     avgComplexity: number;
     stylePreferences: Record<string, number>;
@@ -413,12 +455,12 @@ interface ModelFingerprint {
   // Textual patterns
   textualProfile: {
     avgWordCount: number;
-    vocabularyRichness: number;       // unique words / total words
+    vocabularyRichness: number; // unique words / total words
     abstractnessScore: number;
   };
 
   // Statistical
-  significantDifferences: string[];   // which dimensions differ from others
+  significantDifferences: string[]; // which dimensions differ from others
 }
 ```
 
@@ -484,6 +526,7 @@ scripts/
 ### Step 2: Convex Schema Extension
 
 Add new tables:
+
 ```typescript
 sentiment_analysis: defineTable({
   runId: v.id("runs"),
@@ -520,6 +563,7 @@ model_fingerprints: defineTable({
 ### Step 3: Analysis Queries
 
 Create Convex queries:
+
 ```typescript
 // convex/analytics.ts
 
@@ -545,6 +589,7 @@ export const getEmotionalClusters = query(async ({ db }) => {
 ### Step 4: Visualization Dashboard
 
 Build `/insights` page:
+
 - Server-side fetch analysis data
 - Client-side interactive charts
 - Export functionality (download CSV/JSON)
@@ -564,19 +609,21 @@ Build `/insights` page:
 ## 📦 Dependencies
 
 ### NPM Packages
+
 ```json
 {
-  "sharp": "^0.33.0",              // Image processing
-  "color-thief-node": "^1.0.4",    // Color extraction
-  "color-convert": "^2.0.1",       // Color space conversions
+  "sharp": "^0.33.0", // Image processing
+  "color-thief-node": "^1.0.4", // Color extraction
+  "color-convert": "^2.0.1", // Color space conversions
   "@huggingface/inference": "^2.0.0", // Sentiment models
-  "recharts": "^2.10.0",           // Charting
-  "ml-kmeans": "^6.0.0",           // K-means clustering
-  "simple-statistics": "^7.8.3"    // Statistical tests
+  "recharts": "^2.10.0", // Charting
+  "ml-kmeans": "^6.0.0", // K-means clustering
+  "simple-statistics": "^7.8.3" // Statistical tests
 }
 ```
 
 ### External Services
+
 - Hugging Face Inference API (for sentiment analysis)
 - Optional: OpenAI GPT-4o-mini as judge model
 
@@ -634,7 +681,8 @@ Build `/insights` page:
 4. ✅ **Findings Document** – Interpretation of results
 5. ✅ **Exported Dataset** – JSON snapshot for reproducibility
 
-**Output:** "Emotional palettes of different Artists" — a data-driven portrait of model aesthetics.
+**Output:** "Emotional palettes of different Artists" — a data-driven portrait
+of model aesthetics.
 
 ---
 
@@ -642,34 +690,43 @@ Build `/insights` page:
 
 - **Temporal Analysis:** Track how fingerprints change with model updates
 - **Prompt Sensitivity:** Measure how different prompts shift fingerprints
-- **Human Validation:** Survey to compare algorithmic analysis with human perception
+- **Human Validation:** Survey to compare algorithmic analysis with human
+  perception
 - **Cross-Brush Analysis:** Isolate Artist effects by controlling for Brush
-- **Embedding Search:** Find "similar" images across Artists using CLIP embeddings
+- **Embedding Search:** Find "similar" images across Artists using CLIP
+  embeddings
 
 ---
 
 ## 📚 Related Research
 
-- **Bias in Image Generation:** [Bianchi et al. 2023 - "Easily Accessible Text-to-Image Generation Amplifies Demographic Stereotypes at Large Scale"](https://arxiv.org/abs/2211.03759)
-- **Color Theory in ML:** [Jahanian et al. 2020 - "Generative Models as a Data Source for Multiview Representation Learning"](https://arxiv.org/abs/2106.05258)
-- **Sentiment of LLM Outputs:** [Durmus et al. 2024 - "Measuring the Persuasiveness of Language Models"](https://arxiv.org/abs/2403.14380)
-- **Visual Style Transfer:** [Gatys et al. 2016 - "Image Style Transfer Using Convolutional Neural Networks"](https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf)
+- **Bias in Image Generation:**
+  [Bianchi et al. 2023 - "Easily Accessible Text-to-Image Generation Amplifies Demographic Stereotypes at Large Scale"](https://arxiv.org/abs/2211.03759)
+- **Color Theory in ML:**
+  [Jahanian et al. 2020 - "Generative Models as a Data Source for Multiview Representation Learning"](https://arxiv.org/abs/2106.05258)
+- **Sentiment of LLM Outputs:**
+  [Durmus et al. 2024 - "Measuring the Persuasiveness of Language Models"](https://arxiv.org/abs/2403.14380)
+- **Visual Style Transfer:**
+  [Gatys et al. 2016 - "Image Style Transfer Using Convolutional Neural Networks"](https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf)
 
 ---
 
 ## ⚠️ Limitations & Considerations
 
 1. **Small Sample Size:** Statistical power depends on run count per Artist
-2. **Brush Confounds:** Visual analysis conflates Artist intent with Brush rendering
+2. **Brush Confounds:** Visual analysis conflates Artist intent with Brush
+   rendering
 3. **Prompt Dependence:** Different prompts may yield different fingerprints
 4. **Anthropomorphization:** Avoid implying models have genuine emotions
-5. **Reproducibility:** Model updates can shift results; version-lock for comparisons
+5. **Reproducibility:** Model updates can shift results; version-lock for
+   comparisons
 
 ---
 
 ## 🏁 Success Criteria
 
 ### Phase 3A (Exploratory)
+
 - [ ] Run 5× iteration batch across all configured models
 - [ ] Sentiment, color, and materiality analysis complete for all runs
 - [ ] Initial visualizations show clustering patterns
@@ -677,6 +734,7 @@ Build `/insights` page:
 - [ ] Plan Phase 3B validation approach
 
 ### Phase 3B (Validation)
+
 - [ ] Run 20× iteration batch focused on hypothesis testing
 - [ ] Statistical tests (ANOVA, t-tests) show significant differences
 - [ ] Effect sizes calculated for all hypotheses
@@ -684,7 +742,8 @@ Build `/insights` page:
 - [ ] Findings document with statistical rigor
 - [ ] Exported dataset available for external research
 
-**Definition of Done:** Publish white paper with statistically validated hypotheses about model aesthetic biases.
+**Definition of Done:** Publish white paper with statistically validated
+hypotheses about model aesthetic biases.
 
 ---
 
@@ -693,12 +752,13 @@ Build `/insights` page:
 ### Batch Configuration
 
 **Exploratory Batch #1**
+
 ```json
 {
   "promptVersion": "v2-neutral",
   "artistSlugs": [
     "gpt-5-mini",
-    "claude-sonnet-4-5",
+    "claude-sonnet-4.5",
     "gemini-2.5-flash",
     "gpt-4o-mini",
     "gpt-4o",
@@ -710,6 +770,7 @@ Build `/insights` page:
 ```
 
 **Rationale:**
+
 - 5× iterations provides variance measurement without excessive cost
 - Single brush isolates Artist effects from rendering differences
 - v2-neutral prompt establishes baseline behavior
@@ -749,18 +810,23 @@ For each observed pattern, document:
 These are guesses - real hypotheses will come from actual data:
 
 **H1: Materiality Divergence**
+
 - Observation: Gemini uses more speculative materials in exploratory batch
-- Hypothesis: Gemini's impossibility score is significantly higher (>0.3 difference) than GPT/Claude
+- Hypothesis: Gemini's impossibility score is significantly higher (>0.3
+  difference) than GPT/Claude
 - Validation: 20× batch, ANOVA across models, Cohen's d > 0.5
 
 **H2: Emotional Valence Clustering**
+
 - Observation: Claude shows higher positive valence in statements
 - Hypothesis: Claude's avg valence > 0.1 higher than other models
 - Validation: 20× batch, pairwise t-tests, p < 0.05
 
 **H3: Color Temperature Preference**
+
 - Observation: Model families cluster by warm/cool color preference
-- Hypothesis: OpenAI models skew warm (+0.2 temp), Anthropic skew cool (-0.2 temp)
+- Hypothesis: OpenAI models skew warm (+0.2 temp), Anthropic skew cool (-0.2
+  temp)
 - Validation: 20× batch, ANOVA on temperature scores
 
 ---
@@ -768,6 +834,7 @@ These are guesses - real hypotheses will come from actual data:
 ## 🏁 Success Criteria (Updated)
 
 ### Phase 3A (Exploratory) - Current Phase
+
 - [ ] Run 5× iteration batch across all configured models
 - [ ] Sentiment, color, and materiality analysis complete for all runs
 - [ ] Initial visualizations show clustering patterns
@@ -775,6 +842,7 @@ These are guesses - real hypotheses will come from actual data:
 - [ ] Plan Phase 3B validation approach
 
 ### Phase 3B (Validation) - Next Phase
+
 - [ ] Run 20× iteration batch focused on hypothesis testing
 - [ ] Statistical tests (ANOVA, t-tests) show significant differences
 - [ ] Effect sizes calculated for all hypotheses
@@ -782,4 +850,5 @@ These are guesses - real hypotheses will come from actual data:
 - [ ] Findings document with statistical rigor
 - [ ] Exported dataset available for external research
 
-**Definition of Done:** Publish white paper with statistically validated hypotheses about model aesthetic biases.
+**Definition of Done:** Publish white paper with statistically validated
+hypotheses about model aesthetic biases.
