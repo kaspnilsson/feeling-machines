@@ -4,8 +4,11 @@
  * Aggregates analysis results across runs and computes descriptive statistics
  * (mean, stddev, median, quartiles, CI) for each model/metric combination.
  *
+ * IMPORTANT: Statistics should be computed per-batch (runGroupId) for
+ * controlled comparisons.
+ *
  * Usage:
- *   npx tsx scripts/compute-descriptive-stats.ts [runGroupId]
+ *   npx tsx scripts/compute-descriptive-stats.ts <runGroupId>
  */
 
 import { ConvexHttpClient } from "convex/browser";
@@ -69,15 +72,13 @@ const METRICS: MetricExtractor[] = [
   { name: "materialCount", extract: (m) => m.materials?.length },
 ];
 
-async function computeDescriptiveStats(runGroupId?: string) {
+async function computeDescriptiveStats(runGroupId: string) {
   console.log("📊 Computing descriptive statistics...");
-  if (runGroupId) {
-    console.log(`   Filtering by runGroupId: ${runGroupId}`);
-  }
+  console.log(`   Batch: ${runGroupId}\n`);
 
-  // Fetch all runs (optionally filtered by runGroupId)
+  // Fetch runs for this batch
   const runs = await client.query(api.runs.listRuns, {
-    runGroupId: runGroupId || undefined,
+    runGroupId,
   });
 
   if (runs.length === 0) {
@@ -176,7 +177,7 @@ async function computeDescriptiveStats(runGroupId?: string) {
       const stats = {
         artistSlug,
         metric: metric.name,
-        runGroupId: runGroupId || null,
+        runGroupId,
         n,
         mean: meanVal,
         stdDev,
@@ -211,6 +212,13 @@ async function computeDescriptiveStats(runGroupId?: string) {
 // Run if called directly
 if (require.main === module) {
   const runGroupId = process.argv[2];
+
+  if (!runGroupId) {
+    console.error("❌ Error: runGroupId is required");
+    console.error("Usage: npx tsx scripts/compute-descriptive-stats.ts <runGroupId>");
+    process.exit(1);
+  }
+
   computeDescriptiveStats(runGroupId).catch((error) => {
     console.error("❌ Error:", error);
     process.exit(1);
