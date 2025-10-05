@@ -254,7 +254,7 @@ function ArtworkCard({ run }: { run: any }) {
 
       <CardContent className="space-y-7 p-8">
         {(run.status === "done" || run.status === "failed") && (
-          <div className="space-y-5 rounded-2xl border border-border/50 bg-muted/10">
+          <div className="space-y-5 rounded-2xl">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground">
                 Model statement

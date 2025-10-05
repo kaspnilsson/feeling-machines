@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
   return (
@@ -19,7 +20,15 @@ export function SiteHeader() {
             </span>
           </div>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            <Link href="/how-it-works">How it works</Link>
+          </Button>
           <ThemeToggle />
         </div>
       </div>

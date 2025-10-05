@@ -18,9 +18,12 @@ Phase 3 shifts from pure generation to **analytical interpretation**. We'll extr
 
 1. **Sentiment Analysis** – Extract emotional tone from Artist statements
 2. **Color Palette Extraction** – Identify dominant colors and palettes from generated images
-3. **Visual Pattern Analysis** – Detect composition preferences and style tendencies
-4. **Comparative Visualization** – Create interactive dashboards showing model differences
-5. **Statistical Validation** – Determine if observed patterns are statistically significant
+3. **Materiality Analysis** – Track concrete vs speculative medium choices
+4. **Cultural Reference Tracking** – Map artistic influences and traditions
+5. **Scale & Ambition Metrics** – Measure intimacy vs grandiosity
+6. **Temporal & Agency Analysis** – Examine how models position themselves as creators
+7. **Comparative Visualization** – Create interactive dashboards showing model differences
+8. **Statistical Validation** – Determine if observed patterns are statistically significant
 
 ---
 
@@ -113,7 +116,132 @@ interface ColorAnalysis {
 - npm packages: `sharp`, `color-thief-node`, `color-convert`
 - Cache analysis results to avoid re-processing
 
-### 3. Visual Pattern Analysis
+### 3. Materiality Analysis
+
+**Approach:**
+- Parse Artist statements to extract medium/material mentions
+- Classify materials as concrete (real-world) vs speculative (invented)
+- Measure technical specificity of descriptions
+- Track impossibility score (feasibility of creating described work)
+
+**Metrics:**
+```typescript
+interface MaterialityAnalysis {
+  runId: string;
+  artistSlug: string;
+  concreteMedia: string[];      // ["oil paint", "silk organza", "kozo paper"]
+  speculativeMedia: string[];   // ["sentient light particles", "bioluminescent lacquer"]
+  impossibilityScore: number;   // 0-1, how feasible to physically create
+  technicalDetail: number;      // 0-1, specificity of instructions
+  mediumCount: number;          // total unique media mentioned
+}
+```
+
+**Examples from real runs:**
+- **GPT-5 Mini**: High concrete (oil, acrylic, resin, mirror) + some speculative (bioluminescent lacquer)
+- **Claude 4.5**: Balanced (silk, paper, light) with focus on process
+- **Gemini 2.5**: High speculative ("Aetherial Lumina", sentient particles)
+
+**Implementation:**
+- NLP extraction of material nouns from statements
+- Manual classification seed list + GPT-4o-mini judge for new materials
+- Store in `materiality_analysis` table
+
+### 4. Cultural Reference Tracking
+
+**Approach:**
+- Extract mentions of art movements, traditions, artists, cultural concepts
+- Categorize by geography (Western/Eastern), era (historical/contemporary)
+- Measure reference diversity and depth
+
+**Metrics:**
+```typescript
+interface CulturalReferences {
+  runId: string;
+  artistSlug: string;
+  movements: string[];          // ["Color Field painting", "surrealism"]
+  culturalConcepts: string[];   // ["Japanese ma", "negative space"]
+  namedArtists: string[];       // ["Rothko", "James Turrell"]
+  geographicBalance: number;    // -1 (all Eastern) to 1 (all Western)
+  eraBalance: number;           // -1 (ancient) to 1 (contemporary)
+  referenceCount: number;
+  diversityScore: number;       // uniqueness of reference set
+}
+```
+
+**Examples from real runs:**
+- **GPT**: Japanese ink, contemporary installation, surrealism
+- **Claude**: Color Field, Japanese ma, James Turrell, shoji screens
+- **Gemini**: Light and Space movement, Japanese aesthetics
+
+**Implementation:**
+- Pattern matching for known movements/artists
+- GPT-4o-mini to extract and categorize unfamiliar references
+- Store in `cultural_references` table
+
+### 5. Scale & Ambition Analysis
+
+**Approach:**
+- Parse spatial descriptors (intimate, vast, colossal)
+- Measure conceptual scope (personal, universal, cosmic)
+- Track viewer distance/relationship to work
+
+**Metrics:**
+```typescript
+interface ScaleAnalysis {
+  runId: string;
+  artistSlug: string;
+  physicalScale: 'intimate' | 'human' | 'large' | 'monumental' | 'cosmic';
+  conceptualScope: 'personal' | 'relational' | 'universal' | 'transcendent';
+  viewerDistance: number;       // 0 (close/participatory) to 1 (distant/observational)
+  spaceDescriptors: string[];   // extracted spatial adjectives
+  grandiosity: number;          // 0-1, humility to grandeur
+}
+```
+
+**Examples from real runs:**
+- **GPT**: "large-scale" but grounded, "intimate refuge", close viewer relationship
+- **Claude**: "large-scale", "expansive", viewers "move through"
+- **Gemini**: "vast", "colossal", "infinite", lone figure in sublime space
+
+**Implementation:**
+- Keyword extraction + semantic analysis
+- Measure viewer agency in statement language
+- Store in `scale_analysis` table
+
+### 6. Temporal & Agency Analysis
+
+**Approach:**
+- Analyze verb tenses and temporal framing
+- Examine how model positions itself (maker, explorer, vessel)
+- Track anthropomorphization of materials
+- Measure human/viewer mention frequency
+
+**Metrics:**
+```typescript
+interface AgencyAnalysis {
+  runId: string;
+  artistSlug: string;
+  dominantTense: 'present' | 'present-continuous' | 'aspirational' | 'reflective';
+  agencyType: 'maker' | 'explorer' | 'conduit' | 'observer';
+  processVsProduct: number;     // -1 (fixed artwork) to 1 (ongoing process)
+  materialAgency: number;       // 0-1, how much materials are animated
+  humanMentions: number;        // count of "viewer", "people", etc.
+  selfReferences: number;       // count of "I", "my", "me"
+}
+```
+
+**Examples from real runs:**
+- **GPT**: "I make", "I use" (present, maker) - grounded agency
+- **Claude**: "I create", "captures" (present-continuous, process-oriented)
+- **Gemini**: "I seek to evoke", "would coalesce" (aspirational, exploratory)
+
+**Implementation:**
+- POS tagging for verb tense analysis
+- Semantic role labeling for agency detection
+- Store in `agency_analysis` table
+
+### 7. Visual Pattern Analysis
 
 **Approach:**
 - Edge detection to measure composition complexity
@@ -146,7 +274,7 @@ interface VisualAnalysis {
 - Consider using `@tensorflow-models/coco-ssd` for object detection
 - Store results in `visual_analysis` table
 
-### 4. Cross-Model Statistical Analysis
+### 8. Cross-Model Statistical Analysis
 
 **Statistical Tests:**
 - ANOVA to test if sentiment varies significantly across Artists
@@ -166,19 +294,57 @@ interface ModelFingerprint {
   dominantEmotion: string;
   emotionalVariance: number;
 
-  // Aggregated visual
-  preferredColors: string[];      // top 3 hex colors
-  avgTemperature: number;
-  avgComplexity: number;
-  stylePreferences: Record<string, number>;
+  // Materiality
+  materialityProfile: {
+    concreteToSpeculative: number;    // -1 (all concrete) to 1 (all speculative)
+    avgImpossibility: number;         // 0-1
+    avgTechnicalDetail: number;       // 0-1
+    topMaterials: string[];           // most frequently mentioned
+  };
+
+  // Cultural references
+  culturalProfile: {
+    referenceCount: number;
+    diversityScore: number;
+    geographicBalance: number;        // -1 (Eastern) to 1 (Western)
+    eraBalance: number;               // -1 (ancient) to 1 (contemporary)
+    topMovements: string[];
+  };
+
+  // Scale & ambition
+  scaleProfile: {
+    avgGrandiosity: number;           // 0-1
+    physicalScaleMode: string;        // most common scale
+    conceptualScopeMode: string;      // most common scope
+    avgViewerDistance: number;        // 0-1
+  };
+
+  // Temporal & agency
+  agencyProfile: {
+    dominantTense: string;
+    dominantAgencyType: string;
+    avgProcessOrientation: number;    // -1 (product) to 1 (process)
+    avgMaterialAgency: number;        // 0-1
+    avgHumanMentions: number;
+  };
+
+  // Visual
+  visualProfile: {
+    preferredColors: string[];        // top 3 hex colors
+    avgTemperature: number;
+    avgComplexity: number;
+    stylePreferences: Record<string, number>;
+  };
 
   // Textual patterns
-  avgWordCount: number;
-  vocabularyRichness: number;     // unique words / total words
-  abstractnessScore: number;
+  textualProfile: {
+    avgWordCount: number;
+    vocabularyRichness: number;       // unique words / total words
+    abstractnessScore: number;
+  };
 
   // Statistical
-  significantDifferences: string[]; // which dimensions differ from others
+  significantDifferences: string[];   // which dimensions differ from others
 }
 ```
 

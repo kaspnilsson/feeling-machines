@@ -18,6 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { NewComparisonDialog } from "@/components/new-comparison-dialog";
 import { RunGroupCard } from "@/components/run-group-card";
+import { HowItWorksBanner } from "@/components/how-it-works-banner";
 
 export default function Home() {
   const runGroups = useQuery(api.analytics.listRunGroups);
@@ -75,6 +76,8 @@ export default function Home() {
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
         />
+
+        <HowItWorksBanner onCreateComparison={() => setIsDialogOpen(true)} />
 
         <Separator className="border-border/60" />
 
