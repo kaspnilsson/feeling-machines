@@ -123,15 +123,7 @@ vs GPT vs Gemini" visual comparison.
 
 ---
 
-### **Phase 5 – "The Brush Lab" (optional)**
-
-**Goal:** Fix one Artist and vary Brushes. **Deliverable:** Visual comparison of
-identical prompts rendered across image models. **Output:** "Same idea,
-different medium" exhibit.
-
----
-
-### **Phase 6 – "The White Paper"**
+### **Phase 5 – "The White Paper"**
 
 **Goal:** Write and release a short publication documenting the experiment.
 **Sections:** Abstract, Introduction, Methods, Results, Discussion, Conclusion.
@@ -187,8 +179,7 @@ sentiment_analysis: defineTable({
 | 2     | The Chorus of Artists | Multi-LLM         | Compare view            |
 | 3     | The Hidden Bias       | Analytics         | Emotional palette viz   |
 | 4     | The Introspector      | Persona prompts   | Persona gallery         |
-| 5     | The Brush Lab         | Multi-image-model | Visual style comparison |
-| 6     | The White Paper       | Publication       | Dataset + paper         |
+| 5     | The White Paper       | Publication       | Dataset + paper         |
 
 ---
 
