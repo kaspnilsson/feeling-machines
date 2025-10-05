@@ -10,6 +10,7 @@ import { getBrush } from "@/convex/brushes";
 import { SYSTEM_PROMPT, V2_NEUTRAL } from "@/convex/prompts";
 import { Id } from "@/convex/_generated/dataModel";
 import { analyzeSentiment } from "@/scripts/analyze-sentiment";
+import { getParamPreset } from "@/convex/modelConfig";
 
 /**
  * Phase 2: Enqueue a batch of runs for multiple artists
@@ -22,10 +23,12 @@ export const enqueueRunGroup = mutation(
       promptVersion = "v2-neutral",
       artistSlugs,
       brushSlug,
+      paramPreset = "default",
     }: {
       promptVersion?: string;
       artistSlugs?: string[];
       brushSlug?: string;
+      paramPreset?: string;
     }
   ) => {
     const runGroupId = crypto.randomUUID();
@@ -39,7 +42,7 @@ export const enqueueRunGroup = mutation(
       : DEFAULT_BRUSH;
 
     console.log(
-      `🎨 [EnqueueRunGroup] Creating run group ${runGroupId} with ${selectedArtists.length} artists`
+      `🎨 [EnqueueRunGroup] Creating run group ${runGroupId} with ${selectedArtists.length} artists (params: ${paramPreset})`
     );
 
     const runIds: Id<"runs">[] = [];
@@ -51,6 +54,7 @@ export const enqueueRunGroup = mutation(
         artistSlug: artist.slug,
         brushSlug: brush.slug,
         promptVersion,
+        paramPreset,
         artistStmt: "",
         imagePrompt: "",
         imageUrl: null,
@@ -120,9 +124,13 @@ export const processSingleRun = internalAction(
       try {
         // 1️⃣ Artist imagines
         console.log(`[ProcessRun] Calling artist ${run.artistSlug}...`);
+        const params = run.paramPreset
+          ? getParamPreset(run.paramPreset as any)
+          : undefined;
         artistResponse = await artistAdapter.generateArtistResponse(
           SYSTEM_PROMPT,
-          V2_NEUTRAL
+          V2_NEUTRAL,
+          params
         );
         console.log(
           `[ProcessRun] ✓ Artist complete in ${artistResponse.metadata.latencyMs}ms`

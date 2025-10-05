@@ -61,14 +61,27 @@ vs GPT vs Gemini" visual comparison.
 
 ---
 
-### **Phase 3 – "The Hidden Bias"**
+### **Phase 3 – "The Hidden Bias"** (In Progress)
 
-**Goal:** Quantify each Artist's "aesthetic fingerprint."
+**Goal:** Quantify each Artist's "aesthetic fingerprint" through statistical analysis.
 
-- Sentiment analysis on Artist Statements.
-- Color palette extraction from images.
-- Basic visualization (e.g., t-SNE or scatterplot). **Output:** Data viz
-  dashboard: "emotional palettes of different Artists."
+**What's Working:**
+- ✅ Batch comparison with multiple models running simultaneously
+- ✅ Automatic sentiment analysis on all artist statements
+- ✅ Model parameter presets (default, deterministic, creative, balanced)
+- ✅ Multi-iteration experiments (1×, 3×, 5×, 10×, 20× batch sizes)
+- ✅ Sentiment data stored in database for analysis
+
+**In Development:**
+- Color palette extraction from rendered images
+- Materiality analysis (concrete vs speculative materials)
+- Cultural reference tracking
+- Statistical validation across multiple runs
+- Visualization dashboard showing model fingerprints
+
+**Key Insight:** For statistically meaningful analysis, we need multiple runs per model. The UI now supports batch sizes from 1× to 20× iterations, allowing reproducibility testing and variance measurement.
+
+**Output:** Data viz dashboard comparing emotional patterns, aesthetic preferences, and creative biases across models.
 
 ---
 
@@ -102,15 +115,38 @@ different medium" exhibit.
 
 ```ts
 runs: defineTable({
-  artistSlug: v.string(),
-  brushSlug: v.string(),
-  promptVersion: v.string(),
+  runGroupId: v.string(),      // Links multiple runs from same batch
+  artistSlug: v.string(),       // e.g. "gpt-5-mini", "claude-sonnet-4-5"
+  brushSlug: v.string(),        // e.g. "gemini-2.5-flash-image"
+  promptVersion: v.string(),    // "v2-neutral" | "v3-introspective"
+  paramPreset: v.optional(v.string()),  // "default" | "deterministic" | "creative" | "balanced"
   artistStmt: v.string(),
   imagePrompt: v.string(),
-  imageUrl: v.string(),
-  seed: v.optional(v.number()),
+  imageUrl: v.union(v.string(), v.null()),
+  status: v.string(),           // "queued" | "generating" | "done" | "failed"
+  meta: v.optional(v.any()),    // Cost, latency, model params
   createdAt: v.number(),
 });
+
+sentiment_analysis: defineTable({
+  runId: v.id("runs"),
+  artistSlug: v.string(),
+  emotions: v.object({
+    joy: v.number(),
+    sadness: v.number(),
+    anger: v.number(),
+    fear: v.number(),
+    surprise: v.number(),
+    neutral: v.number(),
+  }),
+  valence: v.number(),       // -1 (negative) to 1 (positive)
+  arousal: v.number(),       // 0 (calm) to 1 (excited)
+  wordCount: v.number(),
+  uniqueWords: v.number(),
+  abstractness: v.number(),  // 0 to 1
+  createdAt: v.number(),
+}).index("by_run", ["runId"])
+  .index("by_artist", ["artistSlug"]);
 ```
 
 ---
@@ -218,7 +254,7 @@ is that from training data, alignment layers, or anthropomorphic projection?
 seed changes?
 
 **Sampling scale:** How many runs per model are enough for a meaningful
-comparison?
+comparison? **Current approach:** UI supports 1×, 3×, 5×, 10×, and 20× batch sizes for statistical testing.
 
 **Bias quantification:** What metrics best represent emotional bias — sentiment
 polarity, vocabulary, color palette, image entropy?
