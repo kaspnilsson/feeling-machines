@@ -8,7 +8,16 @@
 
 ## 📋 Overview
 
-Phase 3 shifts from pure generation to **analytical interpretation**. We'll extract quantitative signals from Artist statements and rendered images to reveal each model's latent aesthetic biases, emotional tendencies, and visual preferences.
+Phase 3 shifts from pure generation to **analytical interpretation**. We'll
+extract quantitative signals from Artist statements and rendered images to
+reveal each model's latent aesthetic biases, emotional tendencies, and visual
+preferences. Insights will surface in two places:
+
+- **Gallery** – public-facing comparison reports highlight the strongest
+  deltas (sentiment, palette, materiality) via `InsightBadge` and story-driven
+  sections.
+- **Lab Console** – internal analytics dashboard exposes deeper charts,
+  filtering, and export tooling for researchers.
 
 **Core Question:** _Can we measure and visualize the "personality" of different LLMs through their artistic output?_
 
@@ -385,7 +394,7 @@ interface ModelFingerprint {
 
 ### Tech Stack
 
-- **Frontend:** Next.js page at `/analytics`
+- **Frontend:** Next.js page at `/insights`
 - **Charts:** Recharts or D3.js for custom visualizations
 - **Data:** Fetch from Convex analytics queries
 - **Interactivity:** Client-side filtering and drill-down
@@ -470,7 +479,7 @@ export const getEmotionalClusters = query(async ({ db }) => {
 
 ### Step 4: Visualization Dashboard
 
-Build `/analytics` page:
+Build `/insights` page:
 - Server-side fetch analysis data
 - Client-side interactive charts
 - Export functionality (download CSV/JSON)
@@ -556,7 +565,7 @@ Build `/analytics` page:
 
 1. ✅ **Analysis Scripts** – Automated batch processing
 2. ✅ **Analytics Database** – Extended Convex schema
-3. ✅ **Dashboard Page** – Interactive visualization at `/analytics`
+3. ✅ **Dashboard Page** – Interactive visualization at `/insights`
 4. ✅ **Findings Document** – Interpretation of results
 5. ✅ **Exported Dataset** – JSON snapshot for reproducibility
 
@@ -602,4 +611,4 @@ Build `/analytics` page:
 - [ ] Findings document interprets results without overstating conclusions
 - [ ] Exported dataset available for external research
 
-**Definition of Done:** Publish `/analytics` dashboard with actionable insights about Artist personalities.
+**Definition of Done:** Publish `/insights` dashboard with actionable insights about Artist personalities.

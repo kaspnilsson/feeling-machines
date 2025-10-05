@@ -8,6 +8,14 @@ describes the artwork it "wants" to create; each **Brush** (image model) renders
 that vision. The project visualizes how different models reveal latent aesthetic
 biases, emotional tones, and worldviews under identical creative constraints.
 
+Feeling Machines now ships two tightly coupled experiences:
+
+- **Gallery** – a public, research-forward showcase that juxtaposes model outputs
+  in a striking, editorial layout. Visitors explore curated comparisons, skim
+  insights, and understand the broader study.
+- **Lab Console** – an internal workspace for researchers to configure batches,
+  monitor progress, and review analytics that power the public story.
+
 ---
 
 ## 🎨 Core Concepts
@@ -40,6 +48,26 @@ Convex DB → Next.js Gallery
 - **Convex** handles storage and serverless functions.
 - **Next.js** renders the public gallery.
 - Prompts, statements, and metadata are all versioned for reproducibility.
+
+---
+
+## 🖼️ Experience Architecture
+
+| Surface       | Audience            | Purpose                                                                 | Key Moments                                                                 |
+| ------------- | ------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Gallery**   | Visitors, press, collaborators | Showcase signature comparisons, narrate findings, and contextualize the research roadmap. | Hero collage, interactive comparison viewer, research highlights, dataset/newsletter CTAs. |
+| **Lab Console** | Research team      | Operate experiments, triage failures, and study analytics that feed the gallery. | Batch queue manager, prompt/model library, analytics dashboards, data export. |
+
+**Gallery priorities**
+- Hero strip featuring 3–4 curated comparisons with synchronized toggles for Artists and Brushes.
+- Story-driven research hub summarizing each phase with visuals, key metrics, and methodology callouts.
+- Comparison detail view with split-screen columns per Artist, synchronized zoom, and inline sentiment badges.
+- Insights page summarizing aggregated metrics (sentiment, palette, materiality) in public-friendly charts.
+
+**Lab Console priorities**
+- Table-first batch manager with filters (queued, generating, done, failed) and inline retry/duplicate controls.
+- Configurable run builder (prompt presets, artist sets, brush, batch size) with saved templates.
+- Analytics dashboard surfacing emotional trends, cost curves, failure diagnostics, and export hooks for deeper analysis.
 
 ---
 
@@ -184,6 +212,18 @@ reproducible offline generation and analysis.
 - `scripts/generate.ts` → runs Artists → Brush and saves JSON/image artifacts.
 - `scripts/analyze.ts` → judge model + color stats.
 - `scripts/combine.ts` → merges everything for the web gallery.
+
+### Frontend surfaces:
+
+- Structure routes into `(public)` and `(console)` groups so the Gallery and Lab
+  Console can evolve independently while sharing shadcn primitives.
+- Centralize reusable patterns (`PageShell`, `SectionHeading`, `MetricGrid`,
+  `InsightBadge`) under `components/patterns/` to keep typography, spacing, and
+  data presentation consistent.
+- Keep editorial content (hero copy, research notes) in MDX/markdown so the
+  Gallery team can iterate without touching console logic.
+
+See `docs/experience.md` for the full UX blueprint.
 
 ### Prompt versioning:
 

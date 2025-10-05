@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 
+import { PageShell } from "@/components/layout/page-shell";
 import { PageDescription, PageHeader, PageTitle } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -70,7 +71,7 @@ const nextSteps = [
 export default function HowItWorksPage() {
   return (
     <main className="pb-24 pt-16">
-      <div className="mx-auto max-w-5xl space-y-14 px-4 sm:px-6">
+      <PageShell maxWidth="5xl" className="space-y-14">
         <PageHeader
           headline={
             <span className="inline-flex items-center gap-2 text-muted-foreground">
@@ -147,7 +148,7 @@ export default function HowItWorksPage() {
             ))}
           </div>
         </section>
-      </div>
+      </PageShell>
     </main>
   );
 }

@@ -1,17 +1,14 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
-import {
-  BarChart3,
-  Boxes,
-  Heart,
-  Palette,
-  Sparkles,
-  TrendingUp,
-} from "lucide-react";
+import { BarChart3, Heart, Sparkles, TrendingUp } from "lucide-react";
 
 import { api } from "@/convex/_generated/api";
+import { PageShell } from "@/components/layout/page-shell";
+import { SectionHeading } from "@/components/patterns/section-heading";
+import { MetricCard } from "@/components/patterns/metric-card";
+import { InsightBadge } from "@/components/patterns/insight-badge";
 import {
   PageDescription,
   PageHeader,
@@ -37,7 +34,46 @@ type SentimentRow = {
   avgEmotions: Record<string, number>;
 };
 
-export default function AnalyticsPage() {
+const paletteSpotlights = [
+  {
+    artistSlug: "gpt-5-mini",
+    colors: ["#F8C471", "#F39C12", "#2E86C1", "#1E3D59"],
+    temperature: "Warm",
+    note: "Leans into golden hour hues with cool accents for contrast.",
+  },
+  {
+    artistSlug: "claude-sonnet-4-5",
+    colors: ["#F6F1EB", "#D7CCC8", "#8D6E63", "#5D4037"],
+    temperature: "Neutral",
+    note: "Prefers soft neutrals and natural materials lighting cues.",
+  },
+  {
+    artistSlug: "gemini-2.5-flash",
+    colors: ["#E3F2FD", "#90CAF9", "#42A5F5", "#1A73E8"],
+    temperature: "Cool",
+    note: "Tends toward luminous blues and atmospheric gradients.",
+  },
+];
+
+const materialitySpotlights = [
+  {
+    artistSlug: "gpt-5-mini",
+    concrete: ["hand-cast glass", "embroidered metallic thread"],
+    speculative: ["phosphorescent silk"],
+  },
+  {
+    artistSlug: "claude-sonnet-4-5",
+    concrete: ["paper screens", "oak frames"],
+    speculative: ["responsive light membranes"],
+  },
+  {
+    artistSlug: "gemini-2.5-flash",
+    concrete: ["mirrored steel"],
+    speculative: ["sentient light particles", "synesthetic vapor"],
+  },
+];
+
+export default function InsightsPage() {
   const sentimentComparison = useQuery(
     api.sentiment.compareArtistSentiments
   ) as SentimentRow[] | undefined;
@@ -76,7 +112,7 @@ export default function AnalyticsPage() {
 
   return (
     <main className="pb-24 pt-16">
-      <div className="mx-auto max-w-7xl space-y-14 px-4 sm:px-6">
+      <PageShell className="space-y-14">
         <PageHeader
           headline={
             <span className="inline-flex items-center gap-2 text-muted-foreground">
@@ -86,15 +122,13 @@ export default function AnalyticsPage() {
           }
         >
           <div className="space-y-5">
-            <PageTitle>Analytics</PageTitle>
+            <PageTitle>Insights</PageTitle>
             <PageDescription>
               Phase 3 dissects the emotional tone, energy, and abstractness of
-              every artist statement. Each batch feeds these aggregates so we can
-              compare how models imagine the same brief.
+              every artist statement. Each batch feeds these aggregates so we
+              can compare how models imagine the same brief.
             </PageDescription>
-            <Badge variant="outline" className="w-fit text-xs">
-              Sentiment analysis alpha
-            </Badge>
+            <InsightBadge>Sentiment analysis alpha</InsightBadge>
           </div>
         </PageHeader>
 
@@ -142,7 +176,10 @@ export default function AnalyticsPage() {
               />
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {sentimentComparison.map((artist) => (
-                  <Card key={artist.artistSlug} className="border-border/60 bg-card">
+                  <Card
+                    key={artist.artistSlug}
+                    className="border-border/60 bg-card"
+                  >
                     <CardHeader className="gap-2">
                       <CardTitle className="flex items-center justify-between">
                         <span className="text-base font-semibold">
@@ -150,9 +187,6 @@ export default function AnalyticsPage() {
                         </span>
                         <Badge variant="outline">{artist.count} runs</Badge>
                       </CardTitle>
-                      <CardDescription>
-                        Emotional fingerprint derived from model statements.
-                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-5">
                       <ValenceMeter value={artist.avgValence} />
@@ -181,86 +215,41 @@ export default function AnalyticsPage() {
 
             <section className="space-y-6">
               <SectionHeading
-                title="Upcoming analyses"
-                description="Color palettes, materiality, and cultural reference tracking ship next."
+                title="Color palette explorer"
+                description="Dominant swatches and tonal tendencies for each Artist — wired to integrate the color analysis pipeline as soon as data lands."
               />
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                <PlaceholderCard
-                  icon={<Palette className="h-5 w-5" />}
-                  title="Color palettes"
-                  body="Extract dominant swatches, temperature, and harmony to map each model’s visual language."
-                />
-                <PlaceholderCard
-                  icon={<Boxes className="h-5 w-5" />}
-                  title="Materiality"
-                  body="Track tangible vs speculative materials plus impossibility scores."
-                />
-                <PlaceholderCard
-                  icon={<BarChart3 className="h-5 w-5" />}
-                  title="Cultural references"
-                  body="Aggregate motifs and historical references that recur in artist statements."
-                />
+              <div className="grid gap-4 md:grid-cols-3">
+                {paletteSpotlights.map((palette) => (
+                  <ColorPaletteCard key={palette.artistSlug} palette={palette} />
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-6">
+              <SectionHeading
+                title="Materiality signals"
+                description="Compare the balance of concrete vs speculative mediums each Artist gravitates toward."
+              />
+              <div className="grid gap-4 md:grid-cols-3">
+                {materialitySpotlights.map((item) => (
+                  <MaterialityCard key={item.artistSlug} materiality={item} />
+                ))}
               </div>
             </section>
           </>
         ) : (
           <EmptyStateCard />
         )}
-      </div>
+      </PageShell>
     </main>
-  );
-}
-
-function SectionHeading({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <h2 className="text-xl font-semibold tracking-tight text-foreground">
-        {title}
-      </h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
-function MetricCard({
-  icon,
-  label,
-  value,
-  helper,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  helper?: string;
-}) {
-  return (
-    <Card className="border-border/60 bg-card">
-      <CardContent className="flex flex-col gap-3 p-6">
-        <div className="flex items-center justify-between text-muted-foreground">
-          <span className="text-xs font-medium uppercase tracking-[0.16em]">
-            {label}
-          </span>
-          <div className="text-foreground/70">{icon}</div>
-        </div>
-        <span className="text-2xl font-semibold text-foreground">{value}</span>
-        {helper && (
-          <span className="text-xs text-muted-foreground">{helper}</span>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
 function ValenceMeter({ value }: { value: number }) {
   const magnitude = Math.min(Math.max(Math.abs(value), 0), 1);
   const width = `${(magnitude * 50).toFixed(2)}%`;
-  const sideClass = value >= 0 ? "left-1/2 bg-emerald-500" : "right-1/2 bg-rose-500";
+  const sideClass =
+    value >= 0 ? "left-1/2 bg-emerald-500" : "right-1/2 bg-rose-500";
 
   return (
     <div className="space-y-2">
@@ -324,7 +313,9 @@ function GaugeList({
               className={`h-full transition-all ${
                 item.tone === "info" ? "bg-blue-500" : "bg-purple-500"
               }`}
-              style={{ width: `${Math.min(Math.max(item.value, 0), 1) * 100}%` }}
+              style={{
+                width: `${Math.min(Math.max(item.value, 0), 1) * 100}%`,
+              }}
             />
           </div>
         </div>
@@ -333,23 +324,75 @@ function GaugeList({
   );
 }
 
-function PlaceholderCard({
-  icon,
-  title,
-  body,
+function ColorPaletteCard({
+  palette,
 }: {
-  icon: ReactNode;
-  title: string;
-  body: string;
+  palette: {
+    artistSlug: string;
+    colors: string[];
+    temperature: string;
+    note: string;
+  };
 }) {
   return (
-    <Card className="border-dashed border-border/50 bg-muted/10">
-      <CardContent className="flex h-full flex-col gap-3 p-6">
-        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-          {icon}
-          {title}
+    <Card className="border-border/60 bg-card">
+      <CardContent className="space-y-4 p-6">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">{palette.artistSlug}</h3>
+          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            {palette.temperature} palette
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">{body}</p>
+        <div className="flex gap-2">
+          {palette.colors.map((hex) => (
+            <div
+              key={hex}
+              className="h-12 flex-1 rounded-md border border-border/40"
+              style={{ backgroundColor: hex }}
+              title={hex}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">{palette.note}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MaterialityCard({
+  materiality,
+}: {
+  materiality: {
+    artistSlug: string;
+    concrete: string[];
+    speculative: string[];
+  };
+}) {
+  return (
+    <Card className="border-border/60 bg-card">
+      <CardContent className="space-y-4 p-6">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">{materiality.artistSlug}</h3>
+          <p className="text-xs text-muted-foreground">
+            Concrete vs speculative mediums flagged by the pipeline.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">Concrete</p>
+          <ul className="space-y-1 text-sm text-foreground">
+            {materiality.concrete.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">Speculative</p>
+          <ul className="space-y-1 text-sm text-foreground">
+            {materiality.speculative.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );
@@ -400,8 +443,8 @@ function EmptyStateCard() {
             No analysis data yet
           </h3>
           <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-            Queue a few comparison batches to unlock the analytics view. Sentiment
-            runs automatically on every completed artist statement.
+            Queue a few comparison batches to unlock the analytics view.
+            Sentiment runs automatically on every completed artist statement.
           </p>
         </div>
       </CardContent>

@@ -6,15 +6,13 @@ import { useMemo, useState } from "react";
 import { Plus, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { PageShell } from "@/components/layout/page-shell";
+import { GalleryHero } from "@/components/patterns/gallery-hero";
+import { SectionHeading } from "@/components/patterns/section-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  PageDescription,
-  PageHeader,
-  PageTitle,
-} from "@/components/page-header";
 import { Separator } from "@/components/ui/separator";
 import { NewComparisonDialog } from "@/components/new-comparison-dialog";
 import { RunGroupCard } from "@/components/run-group-card";
@@ -40,36 +38,8 @@ export default function Home() {
 
   return (
     <main className="pb-24 pt-16">
-      <div className="mx-auto max-w-7xl space-y-14 px-4 sm:px-6">
-        <PageHeader
-          headline={
-            <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
-              Model comparison batches
-            </span>
-          }
-          actions={
-            <Button size="lg" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4" />
-              New model comparison
-            </Button>
-          }
-        >
-          <div className="space-y-8">
-            <PageTitle>Feeling Machines</PageTitle>
-            <PageDescription>
-              Benchmark how different reasoning models explain an identical
-              creative brief, then see how an image model renders each
-              instruction.
-            </PageDescription>
-            {hasRunGroups && (
-              <p className="text-sm text-muted-foreground">
-                {runGroups?.length} active model batches • {totalArtworks} total
-                outputs rendered
-              </p>
-            )}
-          </div>
-        </PageHeader>
+      <PageShell className="space-y-14">
+        <GalleryHero onStartComparison={() => setIsDialogOpen(true)} />
 
         <NewComparisonDialog
           open={isDialogOpen}
@@ -79,6 +49,25 @@ export default function Home() {
         <HowItWorksBanner />
 
         <Separator className="border-border/60" />
+
+        <SectionHeading
+          eyebrow={
+            hasRunGroups && (
+              <span className="inline-flex items-center gap-2 text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5" />
+                {runGroups?.length} active batches · {totalArtworks} artworks
+              </span>
+            )
+          }
+          title="Active comparisons"
+          description="Each batch asks multiple reasoning models to imagine the same brief. Jump into a run group to view the synchronized report."
+          actions={
+            <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New batch
+            </Button>
+          }
+        />
 
         {isLoading && (
           <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3">
@@ -127,7 +116,7 @@ export default function Home() {
             }
           />
         )}
-      </div>
+      </PageShell>
     </main>
   );
 }
