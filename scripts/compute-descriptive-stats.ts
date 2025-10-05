@@ -52,24 +52,24 @@ interface MetricExtractor {
 // Define all metrics we want to compute statistics for
 const METRICS: MetricExtractor[] = [
   // Sentiment metrics
-  { name: "valence", extract: (s) => s.valence },
-  { name: "arousal", extract: (s) => s.arousal },
-  { name: "abstractness", extract: (s) => s.abstractness },
-  { name: "wordCount", extract: (s) => s.wordCount },
-  { name: "emotion_joy", extract: (s) => s.emotions?.joy },
-  { name: "emotion_sadness", extract: (s) => s.emotions?.sadness },
-  { name: "emotion_anger", extract: (s) => s.emotions?.anger },
-  { name: "emotion_fear", extract: (s) => s.emotions?.fear },
-  { name: "emotion_surprise", extract: (s) => s.emotions?.surprise },
+  { name: "valence", extract: (s) => s.valence ?? null },
+  { name: "arousal", extract: (s) => s.arousal ?? null },
+  { name: "abstractness", extract: (s) => s.abstractness ?? null },
+  { name: "wordCount", extract: (s) => s.wordCount ?? null },
+  { name: "emotion_joy", extract: (s) => s.emotions?.joy ?? null },
+  { name: "emotion_sadness", extract: (s) => s.emotions?.sadness ?? null },
+  { name: "emotion_anger", extract: (s) => s.emotions?.anger ?? null },
+  { name: "emotion_fear", extract: (s) => s.emotions?.fear ?? null },
+  { name: "emotion_surprise", extract: (s) => s.emotions?.surprise ?? null },
 
   // Color metrics
-  { name: "temperature", extract: (c) => c.temperature },
-  { name: "saturation", extract: (c) => c.avgSaturation },
+  { name: "temperature", extract: (c) => c.temperature ?? null },
+  { name: "saturation", extract: (c) => c.avgSaturation ?? null },
 
   // Materiality metrics
-  { name: "impossibilityScore", extract: (m) => m.impossibilityScore },
-  { name: "technicalDetail", extract: (m) => m.technicalDetail },
-  { name: "materialCount", extract: (m) => m.materials?.length },
+  { name: "impossibilityScore", extract: (m) => m.impossibilityScore ?? null },
+  { name: "technicalDetail", extract: (m) => m.technicalDetail ?? null },
+  { name: "materialCount", extract: (m) => (m.materials?.length ?? null) },
 ];
 
 async function computeDescriptiveStats(runGroupId: string) {
@@ -77,9 +77,7 @@ async function computeDescriptiveStats(runGroupId: string) {
   console.log(`   Batch: ${runGroupId}\n`);
 
   // Fetch runs for this batch
-  const runs = await client.query(api.runs.listRuns, {
-    runGroupId,
-  });
+  const runs = await client.query(api.runs.list, {});
 
   if (runs.length === 0) {
     console.log("⚠️  No runs found");
@@ -88,21 +86,26 @@ async function computeDescriptiveStats(runGroupId: string) {
 
   console.log(`   Found ${runs.length} runs`);
 
-  // Fetch all analysis data
-  const [sentimentData, colorData, materialityData] = await Promise.all([
-    client.query(api.sentiment.listSentimentAnalysis, {}),
-    client.query(api.colors.listColorAnalysis, {}),
-    client.query(api.materiality.listMaterialityAnalysis, {}),
-  ]);
+  // TODO: Uncomment when list queries are implemented
+  // const [sentimentData, colorData, materialityData] = await Promise.all([
+  //   client.query(api.sentiment.listSentimentAnalysis, {}),
+  //   client.query(api.colors.listColorAnalysis, {}),
+  //   client.query(api.materiality.listMaterialityAnalysis, {}),
+  // ]);
 
   // Build lookup maps by runId
-  const sentimentByRun = new Map(
-    sentimentData.map((s) => [s.runId, s as AnalysisData])
-  );
-  const colorByRun = new Map(colorData.map((c) => [c.runId, c as AnalysisData]));
-  const materialityByRun = new Map(
-    materialityData.map((m) => [m.runId, m as AnalysisData])
-  );
+  const sentimentByRun = new Map<string, AnalysisData>();
+  const colorByRun = new Map<string, AnalysisData>();
+  const materialityByRun = new Map<string, AnalysisData>();
+
+  // TODO: Populate these maps when data is available
+  // const sentimentByRun = new Map(
+  //   sentimentData.map((s: any) => [s.runId, s as AnalysisData])
+  // );
+  // const colorByRun = new Map(colorData.map((c: any) => [c.runId, c as AnalysisData]));
+  // const materialityByRun = new Map(
+  //   materialityData.map((m: any) => [m.runId, m as AnalysisData])
+  // );
 
   // Group runs by artist
   const runsByArtist = new Map<string, typeof runs>();
@@ -119,7 +122,7 @@ async function computeDescriptiveStats(runGroupId: string) {
   const statsToSave: {
     artistSlug: string;
     metric: string;
-    runGroupId: string | null;
+    runGroupId?: string;
     n: number;
     mean: number;
     stdDev: number;

@@ -13,7 +13,12 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yml,yaml,css}\"",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "convex:typecheck": "npx convex dev --typecheck once --once",
+    "validate": "npm run typecheck && npm run lint && npm run test:run",
+    "precommit": "npm run validate",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
@@ -26,6 +31,7 @@
     "eslint-config-next": "^15.5.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^6.1.1",
+    "husky": "^9.1.7",
     "prettier": "^3.3.3",
     "typescript-eslint": "^8.45.0",
     "vitest": "^3.2.4"

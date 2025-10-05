@@ -8,7 +8,7 @@ export const saveModelStatistics = mutation({
   args: {
     artistSlug: v.string(),
     metric: v.string(),
-    runGroupId: v.union(v.string(), v.null()),
+    runGroupId: v.optional(v.string()),
     n: v.number(),
     mean: v.number(),
     stdDev: v.number(),
@@ -84,7 +84,7 @@ export const saveComparison = mutation({
     metric: v.string(),
     artist1: v.string(),
     artist2: v.string(),
-    runGroupId: v.union(v.string(), v.null()),
+    runGroupId: v.optional(v.string()),
     n1: v.number(),
     n2: v.number(),
     mean1: v.number(),
@@ -164,7 +164,7 @@ export const getSignificantComparisons = query({
 export const saveANOVA = mutation({
   args: {
     metric: v.string(),
-    runGroupId: v.union(v.string(), v.null()),
+    runGroupId: v.optional(v.string()),
     fStatistic: v.number(),
     pValue: v.number(),
     dfBetween: v.number(),
