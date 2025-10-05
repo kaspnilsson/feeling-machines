@@ -86,7 +86,7 @@ export function extractMaterials(text: string): string[] {
 
   // Check for speculative materials with keywords
   for (const keyword of SPECULATIVE_KEYWORDS) {
-    const regex = new RegExp(`${keyword}\\s+([a-z-\s]{2,30})`, 'gi');
+    const regex = new RegExp(`${keyword}\\s+([a-z-\\s]{2,30})`, 'gi');
     let match;
     while ((match = regex.exec(lowerText)) !== null) {
       const material = `${keyword} ${match[1].trim()}`;

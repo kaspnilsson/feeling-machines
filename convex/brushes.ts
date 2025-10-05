@@ -4,7 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // Base interface for all brushes
 export interface BrushResult {
   imageB64: string; // All brushes return base64
-  metadata?: any; // Brush-specific metadata
+  // Brush-specific metadata with varying structure per provider
+  metadata?: Record<string, unknown>;
 }
 
 export abstract class Brush {
@@ -147,7 +148,7 @@ export class NanoBananaBrush extends Brush {
 
     // Get the image part from the response
     const imagePart = response.candidates?.[0]?.content?.parts?.find(
-      (part: any) => part.inlineData
+      (part: { inlineData?: unknown }) => part.inlineData
     );
 
     if (!imagePart?.inlineData?.data) {

@@ -16,7 +16,6 @@ interface RunGroupCardProps {
 }
 
 export function RunGroupCard({
-  runGroupId,
   artists,
   totalRuns,
   completedRuns,

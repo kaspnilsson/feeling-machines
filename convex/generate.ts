@@ -74,6 +74,7 @@ export const generate = action(
 
       // Get the public URL for the image
       const imageUrl = await runMutation(api.runs.getStorageUrl, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         storageId: storageId as any,
       });
 
@@ -115,22 +116,35 @@ export const generate = action(
         statement: artistResponse.statement,
         storageId,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error(`[Generate] ✗ Error during generation:`, error);
-      console.error(`[Generate] Error name: ${error.name}`);
-      console.error(`[Generate] Error message: ${error.message}`);
-      console.error(`[Generate] Error status: ${error.status}`);
+      if (error instanceof Error) {
+        console.error(`[Generate] Error name: ${error.name}`);
+        console.error(`[Generate] Error message: ${error.message}`);
+      }
       throw error;
     }
   }
 );
 
 // Mutation to generate upload URL for storage
-export const generateUploadUrl = mutation(async ({ storage }, args: {}) => {
+export const generateUploadUrl = mutation(async ({ storage }) => {
   return await storage.generateUploadUrl();
 });
 
 // Mutation to save the run (called from the action)
-export const saveRun = mutation(async ({ db }, args: any) => {
+// Uses dynamic args matching the runs table schema
+export const saveRun = mutation(async ({ db }, args: {
+  runGroupId: string;
+  artistSlug: string;
+  brushSlug: string;
+  promptVersion: string;
+  artistStmt: string;
+  imagePrompt: string;
+  imageUrl: string;
+  status: string;
+  meta: Record<string, unknown>;
+  createdAt: number;
+}) => {
   await db.insert("runs", args);
 });

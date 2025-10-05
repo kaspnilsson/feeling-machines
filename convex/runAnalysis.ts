@@ -41,9 +41,9 @@ export const analyzeRun = internalAction(
       });
 
       console.log(`[AnalyzeRun] ✓ Sentiment analysis complete`);
-    } catch (error: any) {
+    } catch (error) {
       console.error(
-        `[AnalyzeRun] ⚠ Sentiment analysis failed (non-fatal): ${error.message}`
+        `[AnalyzeRun] ⚠ Sentiment analysis failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
@@ -63,9 +63,9 @@ export const analyzeRun = internalAction(
       });
 
       console.log(`[AnalyzeRun] ✓ Color analysis complete`);
-    } catch (error: any) {
+    } catch (error) {
       console.error(
-        `[AnalyzeRun] ⚠ Color analysis failed (non-fatal): ${error.message}`
+        `[AnalyzeRun] ⚠ Color analysis failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
@@ -84,9 +84,9 @@ export const analyzeRun = internalAction(
       });
 
       console.log(`[AnalyzeRun] ✓ Materiality analysis complete`);
-    } catch (error: any) {
+    } catch (error) {
       console.error(
-        `[AnalyzeRun] ⚠ Materiality analysis failed (non-fatal): ${error.message}`
+        `[AnalyzeRun] ⚠ Materiality analysis failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }

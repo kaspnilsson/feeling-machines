@@ -10,7 +10,7 @@ import { describe, it, expect } from "vitest";
 describe("Sentiment Analysis Queries", () => {
   describe("aggregateSentimentByArtist", () => {
     it("should calculate average emotions correctly", () => {
-      const mockSentiments = [
+      const _mockSentiments = [
         {
           emotions: { joy: 0.8, sadness: 0.2, anger: 0.1, fear: 0.1, surprise: 0.3, neutral: 0.4 },
           valence: 0.6,
@@ -40,7 +40,7 @@ describe("Sentiment Analysis Queries", () => {
     });
 
     it("should calculate average valence and arousal", () => {
-      const mockSentiments = [
+      const _mockSentiments = [
         { valence: 0.6, arousal: 0.7 },
         { valence: 0.2, arousal: 0.5 },
         { valence: -0.1, arousal: 0.3 },
@@ -54,7 +54,7 @@ describe("Sentiment Analysis Queries", () => {
     });
 
     it("should handle empty sentiment list", () => {
-      const mockSentiments: any[] = [];
+      const mockSentiments: unknown[] = [];
 
       const result = {
         count: mockSentiments.length,

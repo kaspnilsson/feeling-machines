@@ -56,7 +56,7 @@ describe("Analytics calculations", () => {
       },
     ];
 
-    const byArtist = runs.reduce((acc: any, run: any) => {
+    const byArtist = runs.reduce((acc: Record<string, { count: number; cost: number; avgLatency: number }>, run: typeof runs[0]) => {
       if (!acc[run.artistSlug]) {
         acc[run.artistSlug] = { count: 0, cost: 0, avgLatency: 0 };
       }
@@ -89,7 +89,7 @@ describe("Analytics calculations", () => {
     ];
 
     const artists: string[] = [];
-    runs.forEach((run: any) => {
+    runs.forEach((run) => {
       if (!artists.includes(run.artistSlug)) {
         artists.push(run.artistSlug);
       }

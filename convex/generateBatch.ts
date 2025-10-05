@@ -9,6 +9,9 @@ import { getArtist } from "./artistAdapters";
 import { getBrush } from "./brushes";
 import { SYSTEM_PROMPT, V2_NEUTRAL } from "./prompts";
 import { Id } from "./_generated/dataModel";
+import type { SentimentAnalysis } from "../scripts/analyze-sentiment";
+import type { ColorAnalysis } from "../scripts/analyze-colors";
+import type { MaterialityAnalysis } from "../scripts/analyze-materiality";
 
 /**
  * Phase 2: Enqueue a batch of runs for multiple artists
@@ -133,14 +136,14 @@ export const processSingleRun = internalAction(
         brushResult = await brush.generate(artistResponse.imagePrompt);
         brushLatency = Date.now() - startBrush;
         console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
-      } catch (error: any) {
+      } catch (error) {
         // If artist succeeded but brush failed, save the artist data
         if (artistResponse) {
           await runMutation(internal.generateBatch.failRunWithArtistData, {
             runId,
             artistStmt: artistResponse.statement,
             imagePrompt: artistResponse.imagePrompt,
-            errorMessage: `Image generation failed: ${error.message}`,
+            errorMessage: `Image generation failed: ${error instanceof Error ? error.message : String(error)}`,
           });
           return;
         }
@@ -171,6 +174,8 @@ export const processSingleRun = internalAction(
 
       // Get the public URL for the image
       const imageUrl = await runMutation(api.runs.getStorageUrl, {
+        // Convex storage ID type mismatch - cast required for API compatibility
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         storageId: storageId as any,
       });
 
@@ -211,13 +216,13 @@ export const processSingleRun = internalAction(
         statement: artistResponse.statement,
         imageUrl,
       });
-    } catch (error: any) {
-      console.error(`[ProcessRun] ✗ Run ${runId} failed:`, error.message);
+    } catch (error) {
+      console.error(`[ProcessRun] ✗ Run ${runId} failed:`, error instanceof Error ? error.message : String(error));
 
       // Update run with error details, preserving any artist/prompt data we got
       await runMutation(internal.generateBatch.failRun, {
         runId,
-        errorMessage: error.message || "Unknown error occurred",
+        errorMessage: error instanceof Error ? error.message : String(error) || "Unknown error occurred",
       });
     }
   }
@@ -244,7 +249,7 @@ export const updateRunStatus = internalMutation(
 );
 
 /**
- * Internal mutation to mark run as failed with error message
+ * Internal mutation to mark run as failed with error instanceof Error ? error.message : String(error)
  */
 export const failRun = internalMutation(
   async (
@@ -302,7 +307,8 @@ export const completeRun = internalMutation(
       artistStmt: string;
       imagePrompt: string;
       imageUrl: string;
-      meta: any;
+      // Dynamic metadata object with varying structure from different artists/brushes
+      meta: Record<string, unknown>;
     }
   ) => {
     await db.patch(runId, {
@@ -326,7 +332,7 @@ export const saveSentiment = internalMutation(
       sentiment,
     }: {
       runId: Id<"runs">;
-      sentiment: any;
+      sentiment: SentimentAnalysis;
     }
   ) => {
     await db.insert("sentiment_analysis", {
@@ -354,7 +360,7 @@ export const saveColorAnalysis = internalMutation(
       colorAnalysis,
     }: {
       runId: Id<"runs">;
-      colorAnalysis: any;
+      colorAnalysis: ColorAnalysis;
     }
   ) => {
     await db.insert("color_analysis", {
@@ -380,11 +386,11 @@ export const saveMaterialityAnalysis = internalMutation(
       materialityAnalysis,
     }: {
       runId: Id<"runs">;
-      materialityAnalysis: any;
+      materialityAnalysis: MaterialityAnalysis;
     }
   ) => {
     // Extract just the material strings from MaterialClassification objects
-    const materials = materialityAnalysis.materials.map((m: any) => m.material);
+    const materials = materialityAnalysis.materials.map((m) => m.material);
 
     await db.insert("materiality_analysis", {
       runId,

@@ -83,9 +83,9 @@ export function NewComparisonDialog({
       );
       onOpenChange(false);
       router.push(`/compare/${result.runGroupId}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Comparison generation failed:", error);
-      const message = error?.message || "Failed to start comparison";
+      const message = error instanceof Error ? error.message : "Failed to start comparison";
       toast.error(message);
     } finally {
       setIsGenerating(false);

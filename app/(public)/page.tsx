@@ -29,7 +29,7 @@ export default function Home() {
     () =>
       runGroups
         ? runGroups.reduce(
-            (acc: number, group: any) => acc + group.totalRuns,
+            (acc, group) => acc + group.totalRuns,
             0
           )
         : 0,
@@ -89,7 +89,7 @@ export default function Home() {
 
         {hasRunGroups && (
           <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3">
-            {runGroups!.map((group: any) => (
+            {runGroups!.map((group) => (
               <RunGroupCard
                 key={group.runGroupId}
                 runGroupId={group.runGroupId}
