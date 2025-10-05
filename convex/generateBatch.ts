@@ -2,13 +2,13 @@ import {
   mutation,
   internalAction,
   internalMutation,
-} from "./_generated/server";
-import { internal, api } from "./_generated/api";
-import { ARTISTS, DEFAULT_BRUSH } from "./artists";
-import { getArtist } from "./artistAdapters";
-import { getBrush } from "./brushes";
-import { SYSTEM_PROMPT, V2_NEUTRAL } from "./prompts";
-import { Id } from "./_generated/dataModel";
+} from "@/convex/_generated/server";
+import { internal, api } from "@/convex/_generated/api";
+import { ARTISTS, DEFAULT_BRUSH } from "@/convex/artists";
+import { getArtist } from "@/convex/artistAdapters";
+import { getBrush } from "@/convex/brushes";
+import { SYSTEM_PROMPT, V2_NEUTRAL } from "@/convex/prompts";
+import { Id } from "@/convex/_generated/dataModel";
 
 /**
  * Phase 2: Enqueue a batch of runs for multiple artists

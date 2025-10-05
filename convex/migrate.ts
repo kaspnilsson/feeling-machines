@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { mutation } from "@/convex/_generated/server";
 
 /**
  * Migration: Convert imageStorageId to imageUrl

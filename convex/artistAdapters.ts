@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ModelParameters, DEFAULT_ARTIST_PARAMS } from "@/convex/modelConfig";
 
 export interface ArtistResponse {
   fullText: string;
@@ -11,6 +12,7 @@ export interface ArtistResponse {
     tokens: number;
     latencyMs: number;
     costEstimate: number;
+    params: ModelParameters; // Record parameters used
   };
 }
 
@@ -23,7 +25,8 @@ export abstract class ArtistAdapter {
 
   abstract generateArtistResponse(
     systemPrompt: string,
-    userPrompt: string
+    userPrompt: string,
+    params?: ModelParameters
   ): Promise<ArtistResponse>;
 }
 
@@ -71,9 +74,11 @@ export class OpenAIArtist extends ArtistAdapter {
 
   async generateArtistResponse(
     systemPrompt: string,
-    userPrompt: string
+    userPrompt: string,
+    params: ModelParameters = DEFAULT_ARTIST_PARAMS
   ): Promise<ArtistResponse> {
     const startTime = Date.now();
+    const finalParams = { ...DEFAULT_ARTIST_PARAMS, ...params };
 
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -85,6 +90,12 @@ export class OpenAIArtist extends ArtistAdapter {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
+      temperature: finalParams.temperature,
+      top_p: finalParams.top_p,
+      max_tokens: finalParams.max_tokens,
+      presence_penalty: finalParams.presence_penalty,
+      frequency_penalty: finalParams.frequency_penalty,
+      seed: finalParams.seed,
     });
 
     const fullText = response.choices[0].message?.content ?? "";
@@ -101,6 +112,7 @@ export class OpenAIArtist extends ArtistAdapter {
         costEstimate: response.usage
           ? estimateOpenAICost(this.slug, response.usage)
           : 0,
+        params: finalParams,
       },
     };
   }
@@ -145,9 +157,11 @@ export class AnthropicArtist extends ArtistAdapter {
 
   async generateArtistResponse(
     systemPrompt: string,
-    userPrompt: string
+    userPrompt: string,
+    params: ModelParameters = DEFAULT_ARTIST_PARAMS
   ): Promise<ArtistResponse> {
     const startTime = Date.now();
+    const finalParams = { ...DEFAULT_ARTIST_PARAMS, ...params };
 
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
@@ -155,9 +169,11 @@ export class AnthropicArtist extends ArtistAdapter {
 
     const response = await anthropic.messages.create({
       model: this.slug,
-      max_tokens: 1024,
+      max_tokens: finalParams.max_tokens ?? 1024,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
+      temperature: finalParams.temperature,
+      top_p: finalParams.top_p,
     });
 
     const fullText =
@@ -173,6 +189,7 @@ export class AnthropicArtist extends ArtistAdapter {
         tokens: response.usage.input_tokens + response.usage.output_tokens,
         latencyMs: Date.now() - startTime,
         costEstimate: estimateAnthropicCost(this.slug, response.usage),
+        params: finalParams,
       },
     };
   }
@@ -188,14 +205,21 @@ export class GoogleArtist extends ArtistAdapter {
 
   async generateArtistResponse(
     systemPrompt: string,
-    userPrompt: string
+    userPrompt: string,
+    params: ModelParameters = DEFAULT_ARTIST_PARAMS
   ): Promise<ArtistResponse> {
     const startTime = Date.now();
+    const finalParams = { ...DEFAULT_ARTIST_PARAMS, ...params };
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
     const model = genAI.getGenerativeModel({
       model: this.slug,
       systemInstruction: systemPrompt,
+      generationConfig: {
+        temperature: finalParams.temperature,
+        topP: finalParams.top_p,
+        maxOutputTokens: finalParams.max_tokens,
+      },
     });
 
     const result = await model.generateContent(userPrompt);
@@ -213,6 +237,7 @@ export class GoogleArtist extends ArtistAdapter {
         tokens: (usage?.totalTokenCount ?? 0),
         latencyMs: Date.now() - startTime,
         costEstimate: estimateGoogleCost(this.slug, usage || {}),
+        params: finalParams,
       },
     };
   }
