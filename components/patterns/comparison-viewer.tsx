@@ -37,8 +37,14 @@ interface ComparisonViewerProps {
   onRunSelect?: (runId: string) => void;
 }
 
-export function ComparisonViewer({ runs, selectedRunId, onRunSelect }: ComparisonViewerProps) {
-  const [internalActiveId, setInternalActiveId] = useState<string | undefined>(runs[0]?._id);
+export function ComparisonViewer({
+  runs,
+  selectedRunId,
+  onRunSelect,
+}: ComparisonViewerProps) {
+  const [internalActiveId, setInternalActiveId] = useState<string | undefined>(
+    runs[0]?._id
+  );
 
   // Use controlled selectedRunId if provided, otherwise use internal state
   const activeId = selectedRunId ?? internalActiveId;
@@ -78,18 +84,26 @@ export function ComparisonViewer({ runs, selectedRunId, onRunSelect }: Compariso
                   <XCircle className="h-10 w-10 text-destructive" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-base font-semibold text-destructive">Generation failed</p>
-                  <p className="text-xs text-muted-foreground">Error details below</p>
+                  <p className="text-base font-semibold text-destructive">
+                    Generation failed
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Error details below
+                  </p>
                 </div>
               </div>
             ) : isPending ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
                 <Skeleton className="h-16 w-16 rounded-full" />
-                <p className="text-sm text-muted-foreground">Generating artwork…</p>
+                <p className="text-sm text-muted-foreground">
+                  Generating artwork…
+                </p>
               </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/60 text-center">
-                <p className="text-sm font-medium text-foreground">No image available</p>
+                <p className="text-sm font-medium text-foreground">
+                  No image available
+                </p>
               </div>
             )}
           </div>
@@ -97,71 +111,74 @@ export function ComparisonViewer({ runs, selectedRunId, onRunSelect }: Compariso
       </Card>
 
       <div className="space-y-5">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">LLM · {activeRun.artistSlug}</Badge>
-              <Badge variant="outline">Image · {activeRun.brushSlug}</Badge>
-              <InsightBadge>{statusLabel(activeRun.status)}</InsightBadge>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {activeRun.meta?.artist?.tokens && (
-                <Badge variant="outline">
-                  Tokens · {activeRun.meta.artist.tokens.toLocaleString()}
-                </Badge>
-              )}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">LLM · {activeRun.artistSlug}</Badge>
+            <Badge variant="outline">Image · {activeRun.brushSlug}</Badge>
+            {activeRun.meta?.artist?.tokens && (
               <Badge variant="outline">
-                Cost · $
-                {(
-                  (activeRun.meta?.artist?.costEstimate || 0) +
-                  (activeRun.meta?.brush?.costEstimate || 0)
-                ).toFixed(6)}
+                Tokens · {activeRun.meta.artist.tokens.toLocaleString()}
               </Badge>
-              {activeRun.meta?.totalLatencyMs && (
-                <Badge variant="outline">
-                  Time · {(activeRun.meta.totalLatencyMs / 1000).toFixed(1)}s
-                </Badge>
-              )}
-            </div>
+            )}
+            {activeRun.meta?.totalLatencyMs && (
+              <Badge variant="outline">
+                Time · {(activeRun.meta.totalLatencyMs / 1000).toFixed(1)}s
+              </Badge>
+            )}
+            <Badge variant="outline">
+              Cost · $
+              {(
+                (activeRun.meta?.artist?.costEstimate || 0) +
+                (activeRun.meta?.brush?.costEstimate || 0)
+              ).toFixed(6)}
+            </Badge>
           </div>
+        </div>
 
-          {activeRun.status === "failed" && activeRun.errorMessage && (
-            <Card className="border-destructive/50 bg-card">
-              <CardContent className="space-y-3 p-6">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-destructive">Error details</h3>
-                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/10 p-3 text-xs leading-relaxed text-foreground">
-                      {activeRun.errorMessage}
-                    </pre>
-                  </div>
+        {activeRun.status === "failed" && activeRun.errorMessage && (
+          <Card className="border-destructive/50 bg-card">
+            <CardContent className="space-y-3 p-6">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <div className="space-y-2 flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-destructive">
+                    Error details
+                  </h3>
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/10 p-3 text-xs leading-relaxed text-foreground">
+                    {activeRun.errorMessage}
+                  </pre>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-          {(activeRun.artistStmt || activeRun.imagePrompt) && (
-            <Card className="border-border/70 bg-card">
-              <CardContent className="space-y-4 p-6 max-h-96 overflow-y-auto">
-                {activeRun.artistStmt && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground">Model statement</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                      {activeRun.artistStmt}
-                    </p>
-                  </div>
-                )}
-                {activeRun.imagePrompt && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground">Prompt sent to brush</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                      {activeRun.imagePrompt}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+        {(activeRun.artistStmt || activeRun.imagePrompt) && (
+          <Card className="border-border/70 bg-card">
+            <CardContent className="space-y-4 p-6 max-h-96 overflow-y-auto">
+              {activeRun.artistStmt && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Model statement
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {activeRun.artistStmt}
+                  </p>
+                </div>
+              )}
+              {activeRun.imagePrompt && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Prompt sent to brush
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {activeRun.imagePrompt}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

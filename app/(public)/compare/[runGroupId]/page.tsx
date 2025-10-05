@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 
-import { AlertTriangle, Check, Clock3, Loader2, Sparkles, LayoutGrid, TableIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Clock3,
+  Loader2,
+  Sparkles,
+  LayoutGrid,
+  TableIcon,
+} from "lucide-react";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 
@@ -170,9 +178,7 @@ function CompareHeader({
           <PageTitle>Compare models</PageTitle>
           <PageDescription>
             Track generation progress, cost, and narrative context for each
-            reasoning model paired with the shared image renderer. Expand a card
-            to inspect the prompt that was sent to the brush and the model’s
-            explanation.
+            reasoning model paired with the shared image renderer.
           </PageDescription>
         </div>
 

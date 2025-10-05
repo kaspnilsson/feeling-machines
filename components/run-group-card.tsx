@@ -22,8 +22,8 @@ export function RunGroupCard({
   createdAt,
   onClick,
 }: RunGroupCardProps) {
-  const { percentage, statusLabel, statusVariant, createdRelative } = useMemo(
-    () => {
+  const { percentage, statusLabel, statusVariant, createdRelative } =
+    useMemo(() => {
       const ratio = totalRuns === 0 ? 0 : completedRuns / totalRuns;
       const isComplete = totalRuns > 0 && completedRuns === totalRuns;
       const isQueued = completedRuns === 0;
@@ -33,11 +33,8 @@ export function RunGroupCard({
         : isQueued
           ? "Queued"
           : "In progress";
-      const statusVariant: "default" | "destructive" | "outline" | "secondary" = isComplete
-        ? "default"
-        : isQueued
-          ? "outline"
-          : "secondary";
+      const statusVariant: "default" | "destructive" | "outline" | "secondary" =
+        isComplete ? "default" : isQueued ? "outline" : "secondary";
 
       const createdRelative = formatRelativeDate(createdAt);
 
@@ -47,9 +44,7 @@ export function RunGroupCard({
         statusVariant,
         createdRelative,
       };
-    },
-    [totalRuns, completedRuns, createdAt]
-  );
+    }, [totalRuns, completedRuns, createdAt]);
 
   return (
     <Card
@@ -75,7 +70,10 @@ export function RunGroupCard({
               {completedRuns}/{totalRuns}
             </span>
           </div>
-          <Progress value={percentage} aria-valuetext={`${percentage}% complete`} />
+          <Progress
+            value={percentage}
+            aria-valuetext={`${percentage}% complete`}
+          />
         </div>
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
