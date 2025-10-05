@@ -92,7 +92,7 @@ export class OpenAIArtist extends ArtistAdapter {
       ],
       temperature: finalParams.temperature,
       top_p: finalParams.top_p,
-      max_tokens: finalParams.max_tokens,
+      max_completion_tokens: finalParams.max_tokens, // GPT-5 uses max_completion_tokens
       presence_penalty: finalParams.presence_penalty,
       frequency_penalty: finalParams.frequency_penalty,
       seed: finalParams.seed,
@@ -167,13 +167,15 @@ export class AnthropicArtist extends ArtistAdapter {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
+    // Anthropic doesn't allow both temperature and top_p
+    // Use temperature only
     const response = await anthropic.messages.create({
       model: this.slug,
       max_tokens: finalParams.max_tokens ?? 1024,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
       temperature: finalParams.temperature,
-      top_p: finalParams.top_p,
+      // top_p omitted - Anthropic doesn't support both
     });
 
     const fullText =
