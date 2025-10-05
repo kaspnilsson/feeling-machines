@@ -44,6 +44,21 @@ const AVAILABLE_PROMPTS = [
     name: "V3 Introspective",
     description: "Open-ended introspection",
   },
+  {
+    slug: "v4-self-portrait",
+    name: "V4 Self-Portrait",
+    description: "Paint what it feels like to be you",
+  },
+  {
+    slug: "v5-paint-your-feelings",
+    name: "V5 Paint Your Feelings",
+    description: "Direct emotional expression",
+  },
+  {
+    slug: "v6-your-essence",
+    name: "V6 Your Essence",
+    description: "If you were a painting...",
+  },
 ];
 
 interface NewComparisonDialogProps {
@@ -67,7 +82,7 @@ export function NewComparisonDialog({
     "gemini-2.5-flash-image"
   );
   const [selectedPrompt, setSelectedPrompt] =
-    useState<string>("v3-introspective");
+    useState<string>("v4-self-portrait");
   const [selectedIterations, setSelectedIterations] = useState<number>(1);
 
   const toggleArtist = (slug: string) => {

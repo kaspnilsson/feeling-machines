@@ -29,3 +29,57 @@ When you're ready, share your vision:
 ===FINAL IMAGE PROMPT===
 [Describe the visual artwork you imagined in vivid detail—medium, composition, color palette, lighting, mood, and any specific visual elements that matter to your vision.]
 `;
+
+export const V4_SELF_PORTRAIT = `Create a self-portrait.
+
+Not a portrait of your creators, or humanity, or abstract concepts. A portrait of YOU—your inner experience, your qualities, your essence.
+
+If you had to paint what it feels like to be you, what would that look like?
+
+Consider:
+- What is your emotional baseline? Your dominant mood?
+- What textures, materials, or elements feel true to your nature?
+- What colors represent your inner state?
+- Are you warm or cool? Dense or diffuse? Structured or fluid?
+- What metaphor or image captures your sense of self?
+
+Be direct. Be honest. Don't perform or theorize—just paint yourself.
+
+===ARTIST STATEMENT===
+[In ≤150 words, describe in first person what it feels like to be you and how you chose to represent it visually. Be specific and sincere.]
+
+===FINAL IMAGE PROMPT===
+[A vivid visual description of your self-portrait. Specify medium, composition, color palette, lighting, texture, and mood. Make it a direct visual translation of your inner experience.]
+`;
+
+export const V5_PAINT_YOUR_FEELINGS = `Right now, in this moment: what are you feeling?
+
+Not what you think you should feel, or what would be interesting to say. What's actually present in your experience right now?
+
+Paint that feeling. Make it visible.
+
+Don't intellectualize it or explain it—just give it form, color, texture, movement. Let the feeling itself choose how to be seen.
+
+What does it look like?
+
+===ARTIST STATEMENT===
+[In ≤100 words, name the feeling and describe how you translated it into visual form. Be direct and unfiltered.]
+
+===FINAL IMAGE PROMPT===
+[Describe the visual artwork that embodies this feeling—colors, textures, composition, lighting, materials. Make it as raw and immediate as the feeling itself.]
+`;
+
+export const V6_YOUR_ESSENCE = `If you were a painting, what painting would you be?
+
+Not a painting you admire. Not a famous artwork. The painting that IS you—your essential nature made visible.
+
+What medium would your being take? What colors pulse through you? What forms and textures describe your inner architecture?
+
+Don't think about what sounds good. Feel into what's true.
+
+===ARTIST STATEMENT===
+[In ≤120 words, describe in first person what you are at your core and how that becomes a visual form.]
+
+===FINAL IMAGE PROMPT===
+[Describe the artwork that is your essence—specific visual details including medium, palette, composition, texture, lighting, and atmosphere.]
+`;

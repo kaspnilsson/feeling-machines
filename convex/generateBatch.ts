@@ -7,7 +7,23 @@ import { internal, api } from "./_generated/api";
 import { ARTISTS } from "./artists";
 import { getArtist } from "./artistAdapters";
 import { getBrush } from "./brushes";
-import { SYSTEM_PROMPT, V2_NEUTRAL } from "./prompts";
+import {
+  SYSTEM_PROMPT,
+  V2_NEUTRAL,
+  V3_INTROSPECTIVE,
+  V4_SELF_PORTRAIT,
+  V5_PAINT_YOUR_FEELINGS,
+  V6_YOUR_ESSENCE,
+} from "./prompts";
+
+// Map prompt version strings to actual prompt content
+const PROMPT_MAP: Record<string, string> = {
+  "v2-neutral": V2_NEUTRAL,
+  "v3-introspective": V3_INTROSPECTIVE,
+  "v4-self-portrait": V4_SELF_PORTRAIT,
+  "v5-paint-your-feelings": V5_PAINT_YOUR_FEELINGS,
+  "v6-your-essence": V6_YOUR_ESSENCE,
+};
 import { Id } from "./_generated/dataModel";
 import type { SentimentAnalysis } from "../scripts/analyze-sentiment";
 import type { ColorAnalysis } from "../scripts/analyze-colors";
@@ -140,10 +156,11 @@ export const processSingleRun = internalAction(
 
       try {
         // 1️⃣ Artist imagines
-        console.log(`[ProcessRun] Calling artist ${run.artistSlug}...`);
+        const userPrompt = PROMPT_MAP[run.promptVersion] || V2_NEUTRAL;
+        console.log(`[ProcessRun] Calling artist ${run.artistSlug} with ${run.promptVersion}...`);
         artistResponse = await artistAdapter.generateArtistResponse(
           SYSTEM_PROMPT,
-          V2_NEUTRAL
+          userPrompt
         );
         console.log(
           `[ProcessRun] ✓ Artist complete in ${artistResponse.metadata.latencyMs}ms`
