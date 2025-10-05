@@ -1,9 +1,9 @@
-import { action, mutation } from "@/convex/_generated/server";
-import { api } from "@/convex/_generated/api";
-import { V2_NEUTRAL, SYSTEM_PROMPT } from "@/convex/prompts";
-import { DEFAULT_ARTIST, DEFAULT_BRUSH } from "@/convex/artists";
-import { getBrush } from "@/convex/brushes";
-import { getArtist } from "@/convex/artistAdapters";
+import { action, mutation } from "./_generated/server";
+import { api } from "./_generated/api";
+import { V2_NEUTRAL, SYSTEM_PROMPT } from "./prompts";
+import { DEFAULT_ARTIST, DEFAULT_BRUSH } from "./artists";
+import { getBrush } from "./brushes";
+import { getArtist } from "./artistAdapters";
 
 export const generate = action(
   async ({

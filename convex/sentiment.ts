@@ -1,5 +1,5 @@
-import { query } from "@/convex/_generated/server";
-import { Id } from "@/convex/_generated/dataModel";
+import { query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 /**
  * Get sentiment analysis for a specific run

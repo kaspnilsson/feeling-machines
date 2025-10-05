@@ -1,5 +1,5 @@
-import { query, mutation } from "@/convex/_generated/server";
-import { Id } from "@/convex/_generated/dataModel";
+import { query, mutation } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 export const list = query(async ({ db }) => {
   const runs = await db.query("runs").order("desc").take(20);
