@@ -23,6 +23,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           <Button
             asChild
+            variant="ghost"
+            size="sm"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            <Link href="/analytics">Analytics</Link>
+          </Button>
+          <Button
+            asChild
             variant="outline"
             size="sm"
             className="text-sm text-muted-foreground hover:text-foreground"
