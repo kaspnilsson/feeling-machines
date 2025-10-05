@@ -7,13 +7,13 @@ export default defineSchema({
     artistSlug: v.string(), // e.g. "gpt-5-mini"
     brushSlug: v.string(), // e.g. "gemini-2.5-flash-image"
     promptVersion: v.string(), // "v2-neutral" | "v3-introspective"
-    paramPreset: v.optional(v.string()), // "default" | "deterministic" | "creative" | "balanced"
+    paramPreset: v.optional(v.string()), // DEPRECATED - kept for backwards compatibility during migration
     artistStmt: v.string(),
     imagePrompt: v.string(),
     imageUrl: v.union(v.string(), v.null()), // URL to image (null until generated)
     status: v.string(), // "queued" | "generating" | "done" | "failed"
     errorMessage: v.optional(v.string()), // Error message if status is "failed"
-    meta: v.optional(v.any()), // { artist: {params, tokens, cost}, brush: {cost}, totalLatencyMs }
+    meta: v.optional(v.any()), // { artist: {tokens, cost}, brush: {cost}, totalLatencyMs }
     createdAt: v.number(),
   }),
 

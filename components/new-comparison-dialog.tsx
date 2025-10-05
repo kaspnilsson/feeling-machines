@@ -37,13 +37,6 @@ const AVAILABLE_PROMPTS = [
   { slug: "v3-introspective", name: "V3 Introspective", description: "Open-ended introspection" },
 ];
 
-const AVAILABLE_PARAMS = [
-  { slug: "default", name: "Default", description: "Temperature 0.9 - Creative variance" },
-  { slug: "deterministic", name: "Deterministic", description: "Temperature 0.7, seed 42 - Reproducible" },
-  { slug: "creative", name: "High Creativity", description: "Temperature 1.2 - Maximum exploration" },
-  { slug: "balanced", name: "Balanced", description: "Temperature 0.8 - Production use" },
-];
-
 interface NewComparisonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,8 +56,6 @@ export function NewComparisonDialog({
   );
   const [selectedBrush, setSelectedBrush] = useState<string>("gemini-2.5-flash-image");
   const [selectedPrompt, setSelectedPrompt] = useState<string>("v3-introspective");
-  const [selectedParams, setSelectedParams] = useState<string>("default");
-  const [batchSize, setBatchSize] = useState<number>(1);
 
   const toggleArtist = (slug: string) => {
     setSelectedArtists((prev) =>
@@ -81,25 +72,17 @@ export function NewComparisonDialog({
     try {
       setIsGenerating(true);
 
-      // For batch size > 1, create multiple run groups
-      const runGroups = [];
-      for (let i = 0; i < batchSize; i++) {
-        const result = await enqueueBatch({
-          promptVersion: selectedPrompt,
-          artistSlugs: selectedArtists,
-          brushSlug: selectedBrush,
-          paramPreset: selectedParams,
-        });
-        runGroups.push(result.runGroupId);
-      }
+      const result = await enqueueBatch({
+        promptVersion: selectedPrompt,
+        artistSlugs: selectedArtists,
+        brushSlug: selectedBrush,
+      });
 
-      const totalRuns = selectedArtists.length * batchSize;
       toast.success(
-        `Comparison started! Generating ${totalRuns} model outputs...`
+        `Comparison started! Generating ${selectedArtists.length} model outputs...`
       );
       onOpenChange(false);
-      // Navigate to first run group
-      router.push(`/compare/${runGroups[0]}`);
+      router.push(`/compare/${result.runGroupId}`);
     } catch (error: any) {
       console.error("Comparison generation failed:", error);
       const message = error?.message || "Failed to start comparison";
@@ -215,66 +198,6 @@ export function NewComparisonDialog({
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/10 p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Model parameters
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Control randomness and creativity
-              </p>
-            </div>
-            <div className="space-y-3">
-              {AVAILABLE_PARAMS.map((param) => (
-                <div key={param.slug} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={param.slug}
-                    checked={selectedParams === param.slug}
-                    onCheckedChange={() => setSelectedParams(param.slug)}
-                  />
-                  <Label
-                    htmlFor={param.slug}
-                    className="flex flex-1 flex-col space-y-0.5 text-sm font-normal cursor-pointer"
-                  >
-                    <span>{param.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {param.description}
-                    </span>
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-3 rounded-2xl border border-border/60 bg-amber-500/10 p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Batch size <Badge variant="secondary" className="ml-2 text-xs">For statistical analysis</Badge>
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Run the same configuration multiple times for reproducibility testing
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {[1, 3, 5, 10, 20].map((size) => (
-                <Button
-                  key={size}
-                  variant={batchSize === size ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBatchSize(size)}
-                  className="flex-1"
-                >
-                  {size}×
-                </Button>
-              ))}
-            </div>
-            {batchSize > 1 && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Will generate {selectedArtists.length * batchSize} total outputs ({selectedArtists.length} models × {batchSize} iterations)
-              </p>
-            )}
           </div>
         </div>
 
