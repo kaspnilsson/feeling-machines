@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "Feeling Machines",
-  description: "AI Artists expressing their inner worlds",
+  description: "Compare reasoning and image models imagining the same artwork",
 };
 
 const geistSans = Geist({
@@ -56,7 +56,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`antialiased transition-colors bg-[hsl(var(--background))] text-[hsl(var(--foreground))]`}
+        className="min-h-screen bg-background text-foreground antialiased transition-colors"
       >
         <Providers>
           <SiteHeader />

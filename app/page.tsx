@@ -1,15 +1,21 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  PageDescription,
+  PageHeader,
+  PageTitle,
+} from "@/components/page-header";
+import { Separator } from "@/components/ui/separator";
 import { NewComparisonDialog } from "@/components/new-comparison-dialog";
 import { RunGroupCard } from "@/components/run-group-card";
 
@@ -18,49 +24,81 @@ export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
 
-  return (
-    <main className="min-h-[calc(100vh-56px)] bg-gradient-to-b from-transparent to-muted/30">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
-        <section className="mb-8">
-          <h1 className="title-gradient heading-tight text-5xl md:text-6xl font-extrabold tracking-tight mb-4">
-            Feeling Machines
-          </h1>
-          <p className="text-muted-foreground text-balance max-w-2xl text-lg md:text-xl">
-            Compare how different AI models imagine and express art. Each Artist
-            (LLM) describes what it wants to create; each Brush (image model)
-            renders that vision.
-          </p>
-        </section>
+  const isLoading = runGroups === undefined;
+  const hasRunGroups = !!runGroups && runGroups.length > 0;
+  const totalArtworks = useMemo(
+    () =>
+      runGroups
+        ? runGroups.reduce(
+            (acc: number, group: any) => acc + group.totalRuns,
+            0
+          )
+        : 0,
+    [runGroups]
+  );
 
-        <Button
-          onClick={() => setIsDialogOpen(true)}
-          className="mb-10 shadow-lg hover:shadow-xl transition-shadow"
-          size="lg"
+  return (
+    <main className="pb-24 pt-16">
+      <div className="mx-auto max-w-7xl space-y-14 px-4 sm:px-6">
+        <PageHeader
+          headline={
+            <span className="inline-flex items-center gap-2 text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5" />
+              Model comparison batches
+            </span>
+          }
+          actions={
+            <Button size="lg" onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New model comparison
+            </Button>
+          }
         >
-          <Plus />
-          New Comparison
-        </Button>
+          <div className="space-y-8">
+            <PageTitle>Feeling Machines</PageTitle>
+            <PageDescription>
+              Benchmark how different reasoning models explain an identical
+              creative brief, then see how a shared image model renders each
+              instruction. Track completion, cost, and narrative differences in
+              one place.
+            </PageDescription>
+            {hasRunGroups && (
+              <p className="text-sm text-muted-foreground">
+                {runGroups?.length} active model batches • {totalArtworks} total
+                outputs rendered
+              </p>
+            )}
+          </div>
+        </PageHeader>
 
         <NewComparisonDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
         />
 
-        {/* Loading skeleton */}
-        {!runGroups && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="w-full h-48" />
+        <Separator className="border-border/60" />
+
+        {isLoading && (
+          <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3">
+            {[...Array(6).keys()].map((i) => (
+              <Card
+                key={i}
+                className="overflow-hidden border-border/40 bg-card p-8"
+              >
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-2 w-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
               </Card>
             ))}
           </div>
         )}
 
-        {/* Run Groups Grid */}
-        {runGroups && runGroups.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {runGroups.map((group: any) => (
+        {hasRunGroups && (
+          <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3">
+            {runGroups!.map((group: any) => (
               <RunGroupCard
                 key={group.runGroupId}
                 runGroupId={group.runGroupId}
@@ -74,22 +112,18 @@ export default function Home() {
           </div>
         )}
 
-        {/* Empty state */}
-        {runGroups?.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Plus className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground mb-2">No comparisons yet</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create your first comparison to see how different AI models
-              imagine art
-            </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus />
-              Create Comparison
-            </Button>
-          </div>
+        {!isLoading && !hasRunGroups && (
+          <EmptyState
+            icon={<Plus className="h-6 w-6" />}
+            title="Start your first comparison"
+            description="Select the reasoning models and shared image model you want to evaluate, then review their outputs side-by-side."
+            action={
+              <Button size="lg" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create model comparison
+              </Button>
+            }
+          />
         )}
       </div>
     </main>

@@ -12,7 +12,8 @@ export const getRunGroupStats = query(
 
     const stats = {
       total: runs.length,
-      completed: runs.filter((r) => r.status === "done").length,
+      completed: runs.filter((r) => r.status === "done" || r.status === "failed").length,
+      done: runs.filter((r) => r.status === "done").length,
       failed: runs.filter((r) => r.status === "failed").length,
       generating: runs.filter((r) => r.status === "generating").length,
       queued: runs.filter((r) => r.status === "queued").length,
@@ -126,7 +127,7 @@ export const listRunGroups = query(async ({ db }) => {
 
     const group = groupsMap.get(run.runGroupId)!;
     group.totalRuns++;
-    if (run.status === "done") group.completedRuns++;
+    if (run.status === "done" || run.status === "failed") group.completedRuns++;
     if (!group.artists.includes(run.artistSlug)) {
       group.artists.push(run.artistSlug);
     }

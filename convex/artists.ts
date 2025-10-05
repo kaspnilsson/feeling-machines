@@ -6,14 +6,14 @@ export interface ArtistConfig {
 
 export const ARTISTS: ArtistConfig[] = [
   {
-    slug: "gpt-4o-mini",
-    provider: "openai",
-    displayName: "GPT-4o Mini",
-  },
-  {
     slug: "gpt-4o",
     provider: "openai",
     displayName: "GPT-4o",
+  },
+  {
+    slug: "gpt-5",
+    provider: "openai",
+    displayName: "GPT-5",
   },
   // Phase 2+ will add: claude-3-opus, gemini-1.5-pro, etc.
 ];

@@ -22,7 +22,9 @@ export function ThemeToggle() {
         (ls ? ls === "dark" : !!mql?.matches) ||
         root.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
-    } catch {}
+    } catch {
+      // Ignore errors accessing localStorage
+    }
   }, []);
 
   const toggle = () => {
@@ -33,7 +35,9 @@ export function ThemeToggle() {
     else root.classList.remove("dark");
     try {
       localStorage.setItem(THEME_KEY, next);
-    } catch {}
+    } catch {
+      // Ignore errors accessing localStorage
+    }
   };
 
   return (
