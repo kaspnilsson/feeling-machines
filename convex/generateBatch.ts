@@ -97,22 +97,41 @@ export const processSingleRun = internalAction(
         `[ProcessRun] Artist: ${artistAdapter.displayName}, Brush: ${brush.displayName}`
       );
 
-      // 1️⃣ Artist imagines
-      console.log(`[ProcessRun] Calling artist ${run.artistSlug}...`);
-      const artistResponse = await artistAdapter.generateArtistResponse(
-        SYSTEM_PROMPT,
-        V2_NEUTRAL
-      );
-      console.log(
-        `[ProcessRun] ✓ Artist complete in ${artistResponse.metadata.latencyMs}ms`
-      );
+      let artistResponse;
+      let brushResult;
+      let brushLatency = 0;
 
-      // 2️⃣ Brush paints
-      console.log(`[ProcessRun] Calling brush ${run.brushSlug}...`);
-      const startBrush = Date.now();
-      const brushResult = await brush.generate(artistResponse.imagePrompt);
-      const brushLatency = Date.now() - startBrush;
-      console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
+      try {
+        // 1️⃣ Artist imagines
+        console.log(`[ProcessRun] Calling artist ${run.artistSlug}...`);
+        artistResponse = await artistAdapter.generateArtistResponse(
+          SYSTEM_PROMPT,
+          V2_NEUTRAL
+        );
+        console.log(
+          `[ProcessRun] ✓ Artist complete in ${artistResponse.metadata.latencyMs}ms`
+        );
+
+        // 2️⃣ Brush paints
+        console.log(`[ProcessRun] Calling brush ${run.brushSlug}...`);
+        const startBrush = Date.now();
+        brushResult = await brush.generate(artistResponse.imagePrompt);
+        brushLatency = Date.now() - startBrush;
+        console.log(`[ProcessRun] ✓ Brush complete in ${brushLatency}ms`);
+      } catch (error: any) {
+        // If artist succeeded but brush failed, save the artist data
+        if (artistResponse) {
+          await runMutation(internal.generateBatch.failRunWithArtistData, {
+            runId,
+            artistStmt: artistResponse.statement,
+            imagePrompt: artistResponse.imagePrompt,
+            errorMessage: `Image generation failed: ${error.message}`,
+          });
+          return;
+        }
+        // Otherwise, just fail
+        throw error;
+      }
 
       // 3️⃣ Upload to storage and get URL
       console.log(`[ProcessRun] Uploading to storage...`);
@@ -172,10 +191,10 @@ export const processSingleRun = internalAction(
     } catch (error: any) {
       console.error(`[ProcessRun] ✗ Run ${runId} failed:`, error.message);
 
-      await runMutation(internal.generateBatch.updateRunStatus, {
+      // Update run with error details, preserving any artist/prompt data we got
+      await runMutation(internal.generateBatch.failRun, {
         runId,
-        status: "failed",
-        errorMessage: error.message,
+        errorMessage: error.message || "Unknown error occurred",
       });
     }
   }
@@ -199,12 +218,55 @@ export const updateRunStatus = internalMutation(
     {
       runId,
       status,
-      errorMessage,
-    }: { runId: Id<"runs">; status: string; errorMessage?: string }
+    }: { runId: Id<"runs">; status: string }
   ) => {
     await db.patch(runId, {
       status,
-      meta: errorMessage ? { errorMessage } : undefined,
+    });
+  }
+);
+
+/**
+ * Internal mutation to mark run as failed with error message
+ */
+export const failRun = internalMutation(
+  async (
+    { db },
+    {
+      runId,
+      errorMessage,
+    }: { runId: Id<"runs">; errorMessage: string }
+  ) => {
+    await db.patch(runId, {
+      status: "failed",
+      errorMessage,
+    });
+  }
+);
+
+/**
+ * Internal mutation to mark run as failed but preserve artist data
+ */
+export const failRunWithArtistData = internalMutation(
+  async (
+    { db },
+    {
+      runId,
+      artistStmt,
+      imagePrompt,
+      errorMessage,
+    }: {
+      runId: Id<"runs">;
+      artistStmt: string;
+      imagePrompt: string;
+      errorMessage: string;
+    }
+  ) => {
+    await db.patch(runId, {
+      artistStmt,
+      imagePrompt,
+      status: "failed",
+      errorMessage,
     });
   }
 );

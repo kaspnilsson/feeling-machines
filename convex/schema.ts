@@ -11,6 +11,7 @@ export default defineSchema({
     imagePrompt: v.string(),
     imageUrl: v.union(v.string(), v.null()), // URL to image (null until generated)
     status: v.string(), // "queued" | "generating" | "done" | "failed"
+    errorMessage: v.optional(v.string()), // Error message if status is "failed"
     meta: v.optional(v.any()), // JSON for model params, cost, latency
     createdAt: v.number(),
   }),

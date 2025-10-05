@@ -116,8 +116,30 @@ function ArtworkCard({ run }: { run: any }) {
             <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
           </div>
         ) : run.status === "failed" ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-destructive">Failed</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+            <div className="mb-3 text-destructive">
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-destructive mb-2">
+              Generation Failed
+            </p>
+            {run.errorMessage && (
+              <p className="text-xs text-muted-foreground max-w-xs">
+                {run.errorMessage}
+              </p>
+            )}
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -132,7 +154,7 @@ function ArtworkCard({ run }: { run: any }) {
           <Badge variant="secondary">{run.brushSlug}</Badge>
         </div>
 
-        {run.status === "done" && (
+        {(run.status === "done" || run.status === "failed") && (
           <>
             <Button
               variant="ghost"
@@ -144,26 +166,41 @@ function ArtworkCard({ run }: { run: any }) {
 
             {showDetails && (
               <div className="mt-4 space-y-2 text-sm">
-                <p className="text-muted-foreground line-clamp-3">
-                  {run.artistStmt}
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  {run.meta?.artist?.tokens && (
+                {run.artistStmt && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Artist Statement:</p>
+                    <p className="text-muted-foreground line-clamp-3">
+                      {run.artistStmt}
+                    </p>
+                  </div>
+                )}
+                {run.imagePrompt && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Image Prompt:</p>
+                    <p className="text-muted-foreground text-xs line-clamp-2">
+                      {run.imagePrompt}
+                    </p>
+                  </div>
+                )}
+                {run.status === "done" && (
+                  <div className="flex gap-2 flex-wrap">
+                    {run.meta?.artist?.tokens && (
+                      <Badge variant="outline">
+                        {run.meta.artist.tokens} tokens
+                      </Badge>
+                    )}
                     <Badge variant="outline">
-                      {run.meta.artist.tokens} tokens
+                      $
+                      {(
+                        (run.meta?.artist?.costEstimate || 0) +
+                        (run.meta?.brush?.costEstimate || 0)
+                      ).toFixed(6)}
                     </Badge>
-                  )}
-                  <Badge variant="outline">
-                    $
-                    {(
-                      (run.meta?.artist?.costEstimate || 0) +
-                      (run.meta?.brush?.costEstimate || 0)
-                    ).toFixed(6)}
-                  </Badge>
-                  <Badge variant="outline">
-                    {(run.meta?.totalLatencyMs / 1000).toFixed(1)}s
-                  </Badge>
-                </div>
+                    <Badge variant="outline">
+                      {(run.meta?.totalLatencyMs / 1000).toFixed(1)}s
+                    </Badge>
+                  </div>
+                )}
               </div>
             )}
           </>
