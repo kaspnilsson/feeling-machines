@@ -20,6 +20,16 @@ export const ARTISTS: ArtistConfig[] = [
     provider: "google",
     displayName: "Gemini 2.5 Flash",
   },
+  {
+    slug: "grok-2-1212",
+    provider: "openrouter",
+    displayName: "Grok 2 (1212)",
+  },
+  {
+    slug: "deepseek-chat",
+    provider: "openrouter",
+    displayName: "DeepSeek Chat",
+  },
 ];
 
 export interface BrushConfig {

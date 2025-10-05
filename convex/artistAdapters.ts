@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { OpenRouterArtist } from "./artistAdapters/openrouter";
 
 export interface ArtistResponse {
   fullText: string;
@@ -222,6 +223,35 @@ export class GoogleArtist extends ArtistAdapter {
 }
 
 /**
+ * OpenRouter adapter wrapper to match ArtistAdapter interface
+ */
+export class OpenRouterAdapter extends ArtistAdapter {
+  private openrouter: OpenRouterArtist;
+
+  constructor(slug: string, displayName: string, openrouterModel: string) {
+    super(slug, displayName, "openrouter");
+    this.openrouter = new OpenRouterArtist(
+      { model: openrouterModel, displayName },
+      process.env.OPENROUTER_API_KEY
+    );
+  }
+
+  async generateArtistResponse(
+    systemPrompt: string,
+    userPrompt: string
+  ): Promise<ArtistResponse> {
+    const response = await this.openrouter.generate({ systemPrompt, userPrompt });
+
+    return {
+      fullText: `${response.statement}\n\n${response.imagePrompt}`,
+      statement: response.statement,
+      imagePrompt: response.imagePrompt,
+      metadata: response.metadata,
+    };
+  }
+}
+
+/**
  * Artist registry - maps slug to adapter instance
  */
 export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = {
@@ -233,6 +263,16 @@ export const ARTIST_REGISTRY: Record<string, ArtistAdapter> = {
   "gemini-2.5-flash": new GoogleArtist(
     "gemini-2.5-flash",
     "Gemini 2.5 Flash"
+  ),
+  "grok-2-1212": new OpenRouterAdapter(
+    "grok-2-1212",
+    "Grok 2 (1212)",
+    "x-ai/grok-2-1212"
+  ),
+  "deepseek-chat": new OpenRouterAdapter(
+    "deepseek-chat",
+    "DeepSeek Chat",
+    "deepseek/deepseek-chat"
   ),
 };
 
