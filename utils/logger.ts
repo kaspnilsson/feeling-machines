@@ -2,6 +2,7 @@
  * Structured logging utilities for observability
  * Provides consistent logging format across the application
  */
+"use node";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
